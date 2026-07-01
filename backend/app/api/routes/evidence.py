@@ -1,0 +1,94 @@
+import hashlib
+import os
+import uuid
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.core.config import settings
+from app.models.evidence import Evidence, EvidenceStatus
+from app.models.audit import AuditLog
+from app.schemas.evidence import EvidenceResponse
+from typing import List, Optional
+
+router = APIRouter()
+
+@router.post("/upload")
+async def upload_evidence(
+    file: UploadFile = File(...), 
+    source_type: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    # Prevent collisions
+    unique_prefix = str(uuid.uuid4())
+    stored_filename = f"{unique_prefix}_{file.filename}"
+    file_location = os.path.join(settings.UPLOAD_DIR, stored_filename)
+    
+    sha256_hash = hashlib.sha256()
+    file_size = 0
+    
+    with open(file_location, "wb") as buffer:
+        while chunk := await file.read(8192):
+            buffer.write(chunk)
+            sha256_hash.update(chunk)
+            file_size += len(chunk)
+            
+    file_hash = sha256_hash.hexdigest()
+    
+    # Duplicate check
+    if db.query(Evidence).filter(Evidence.sha256_hash == file_hash).first():
+        os.remove(file_location)
+        raise HTTPException(status_code=409, detail="Evidence already exists")
+
+    # Create Evidence Record with UPLOADED status
+    new_evidence = Evidence(
+        original_filename=file.filename,
+        stored_filename=stored_filename,
+        file_path=file_location,
+        file_size_bytes=file_size,
+        mime_type=file.content_type,
+        source_type=source_type,
+        sha256_hash=file_hash,
+        status=EvidenceStatus.UPLOADED,
+        is_deleted=False
+    )
+    db.add(new_evidence)
+    db.flush()  # Get the generated evidence_id
+
+    # Create Audit Log
+    audit_entry = AuditLog(
+        action="EVIDENCE_UPLOADED",
+        entity_type="EVIDENCE",
+        entity_id=new_evidence.evidence_id,
+        details=f"Uploaded file {file.filename} with hash {file_hash}"
+    )
+    db.add(audit_entry)
+    db.commit()
+
+    evidence_id = new_evidence.evidence_id
+
+    # Enqueue processing task – fire and forget
+    # If Redis is unavailable the upload still succeeds; status remains UPLOADED
+    try:
+        from app.core.celery_app import celery_app
+        celery_app.send_task("app.services.processing.pipeline.process_evidence", args=[evidence_id])
+    except Exception as task_error:
+        # Log failure to dispatch but do not block the upload response
+        import logging
+        logging.getLogger(__name__).warning(
+            "Could not enqueue processing task for %s: %s", evidence_id, task_error
+        )
+    
+    return {"evidence_id": evidence_id, "status": "UPLOADED"}
+
+
+@router.get("/", response_model=List[EvidenceResponse])
+def list_evidence(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    evidence = db.query(Evidence).filter(Evidence.is_deleted == False).offset(skip).limit(limit).all()
+    return evidence
+
+@router.get("/{evidence_id}", response_model=EvidenceResponse)
+def get_evidence(evidence_id: str, db: Session = Depends(get_db)):
+    evidence = db.query(Evidence).filter(Evidence.evidence_id == evidence_id, Evidence.is_deleted == False).first()
+    if not evidence:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+    return evidence

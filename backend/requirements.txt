@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy
+python-multipart
+pydantic
+pydantic-settings
+alembic
+celery
+redis
+pytesseract
+Pillow
+PyMuPDF
+pdf2image
+python-magic-bin
+spacy
+exifread

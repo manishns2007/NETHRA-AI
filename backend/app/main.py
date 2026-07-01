@@ -1,0 +1,27 @@
+from fastapi import FastAPI
+from app.api.routes import evidence, audit, intelligence
+from app.core.database import engine, Base
+from app.core.config import settings
+from fastapi.middleware.cors import CORSMiddleware
+import app.models  # noqa: F401 – ensures all models register with SQLAlchemy Base
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title=settings.PROJECT_NAME)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(evidence.router, prefix=f"{settings.API_V1_STR}/evidence", tags=["evidence"])
+app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit-logs", tags=["audit-logs"])
+app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intelligence", tags=["intelligence"])
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to NETHRA AI API"}
