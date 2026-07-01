@@ -40,4 +40,22 @@ export const getIntelligenceEntities = async (evidenceId, entityType = null) => 
   return api.get(`/intelligence/${evidenceId}/entities`, { params });
 };
 
+// ── Graph API ─────────────────────────────────────────────────────────────────
+
+export const getGraphForEvidence = async (evidenceId) => {
+  return api.get(`/graph/evidence/${evidenceId}`);
+};
+
+export const getGraphSummary = async () => {
+  return api.get('/graph/summary');
+};
+
+export const getEntitySubgraph = async (entityId) => {
+  return api.get(`/graph/${entityId}`);
+};
+
+export const searchGraph = async (q, limit = 50) => {
+  return api.get('/graph/search', { params: { q, limit } });
+};
+
 export default api;

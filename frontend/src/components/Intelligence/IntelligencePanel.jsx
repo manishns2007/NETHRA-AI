@@ -3,6 +3,7 @@ import { getIntelligenceStatus, getIntelligenceMetadata, getIntelligenceOCR, get
 import MetadataViewer from './MetadataViewer';
 import OCRPreview from './OCRPreview';
 import EntityList from './EntityList';
+import InvestigationGraph from '../Graph/InvestigationGraph';
 
 export default function IntelligencePanel({ evidenceId, onClose }) {
   const [activeTab, setActiveTab] = useState('status');
@@ -81,16 +82,23 @@ export default function IntelligencePanel({ evidenceId, onClose }) {
         return <OCRPreview ocrResults={data.ocr} />;
       case 'entities':
         return <EntityList entities={data.entities} />;
+      case 'graph':
+        return (
+          <div className="h-[520px]">
+            <InvestigationGraph evidenceId={evidenceId} />
+          </div>
+        );
       default:
         return null;
     }
   };
 
   const tabs = [
-    { id: 'status', label: 'Status & Logs' },
+    { id: 'status',   label: 'Status & Logs' },
     { id: 'metadata', label: 'Metadata' },
-    { id: 'ocr', label: 'Extracted Text' },
+    { id: 'ocr',      label: 'Extracted Text' },
     { id: 'entities', label: 'Named Entities' },
+    { id: 'graph',    label: '🕸 Investigation Graph' },
   ];
 
   return (

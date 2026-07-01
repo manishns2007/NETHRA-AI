@@ -41,6 +41,7 @@ from app.models.intelligence import (
 from app.services.processing.classifier import classify_file, FileCategory
 from app.services.processing.metadata import extract_metadata
 from app.services.processing.ner import extract_entities
+from app.graph.builder import build_graph_for_evidence
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +265,31 @@ def process_evidence(self, evidence_id: str) -> dict[str, Any]:
             f"Extracted {len(entities)} entit(ies)"
         )
 
-        # ── Step 8: Mark PROCESSED ────────────────────────────────────────────
+        # ── Step 8: Build Knowledge Graph ─────────────────────────────────────
+        try:
+            graph_stats = build_graph_for_evidence(db, evidence_id, entities)
+            _write_log(
+                db, evidence_id, "GRAPH_BUILD", "SUCCESS",
+                f"Graph: +{graph_stats['nodes_created']} nodes, "
+                f"{graph_stats['nodes_reused']} reused, "
+                f"+{graph_stats['edges_created']} edges"
+            )
+            logger.info(
+                "Graph built for evidence %s: %s",
+                evidence_id, graph_stats,
+            )
+        except Exception as graph_exc:
+            # Graph build errors are non-fatal — partial results are preserved
+            logger.exception(
+                "Graph build failed for evidence %s (non-fatal): %s",
+                evidence_id, graph_exc,
+            )
+            _write_log(
+                db, evidence_id, "GRAPH_BUILD", "FAILED",
+                f"Graph build error (non-fatal): {graph_exc}",
+            )
+
+        # ── Step 9: Mark PROCESSED ────────────────────────────────────────────
         _set_status(db, evidence, EvidenceStatus.PROCESSED)
         logger.info(
             "Evidence %s processed: %d metadata, %d pages, %d entities",

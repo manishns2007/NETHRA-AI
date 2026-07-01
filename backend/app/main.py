@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.routes import evidence, audit, intelligence
+from app.api.routes import evidence, audit, intelligence, graph
 from app.core.database import engine, Base
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +21,7 @@ app.add_middleware(
 app.include_router(evidence.router, prefix=f"{settings.API_V1_STR}/evidence", tags=["evidence"])
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit-logs", tags=["audit-logs"])
 app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intelligence", tags=["intelligence"])
+app.include_router(graph.router, prefix=f"{settings.API_V1_STR}/graph", tags=["graph"])
 
 @app.get("/")
 def root():
