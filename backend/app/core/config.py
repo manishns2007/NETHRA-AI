@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     # Processing pipeline version – increment when extraction engines are upgraded
     PROCESSING_VERSION: str = "v1.0"
 
+    # Threat Intelligence API Keys
+    VIRUSTOTAL_API_KEY: str | None = None
+    ABUSEIPDB_API_KEY: str | None = None
+    HIBP_API_KEY: str | None = None
+    WHOIS_API_KEY: str | None = None
+    GEOIP_API_KEY: str | None = None
+    BLOCKCHAIN_API_KEY: str | None = None
+
     class Config:
         case_sensitive = True
         env_file = ".env"

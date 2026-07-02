@@ -58,4 +58,26 @@ export const searchGraph = async (q, limit = 50) => {
   return api.get('/graph/search', { params: { q, limit } });
 };
 
+// ── Enrichment API ────────────────────────────────────────────────────────────
+
+export const getEnrichmentProviders = async () => {
+  return api.get('/enrichment/providers');
+};
+
+export const getEntityEnrichment = async (entityId) => {
+  return api.get(`/enrichment/entity/${entityId}`);
+};
+
+export const getEntityEnrichmentStatus = async (entityId) => {
+  return api.get(`/enrichment/entity/${entityId}/status`);
+};
+
+export const refreshEntityEnrichment = async (entityId) => {
+  return api.post(`/enrichment/entity/${entityId}/refresh`);
+};
+
+export const refreshEvidenceEnrichment = async (evidenceId) => {
+  return api.post(`/enrichment/evidence/${evidenceId}/refresh`);
+};
+
 export default api;

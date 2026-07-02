@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.routes import evidence, audit, intelligence, graph
+from app.api.routes import evidence, audit, intelligence, graph, analysis, enrichment
 from app.core.database import engine, Base
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +22,8 @@ app.include_router(evidence.router, prefix=f"{settings.API_V1_STR}/evidence", ta
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit-logs", tags=["audit-logs"])
 app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intelligence", tags=["intelligence"])
 app.include_router(graph.router, prefix=f"{settings.API_V1_STR}/graph", tags=["graph"])
+app.include_router(analysis.router, prefix=f"{settings.API_V1_STR}/analysis", tags=["analysis"])
+app.include_router(enrichment.router, prefix=f"{settings.API_V1_STR}/enrichment", tags=["enrichment"])
 
 @app.get("/")
 def root():

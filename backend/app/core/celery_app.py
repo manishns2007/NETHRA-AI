@@ -50,7 +50,10 @@ def create_celery_app() -> Celery:
 
         # Autodiscover tasks from the processing services package
         # Additional task modules can be listed here as the platform grows
-        include=["app.services.processing.pipeline"],
+        include=[
+            "app.services.processing.pipeline",
+            "app.enrichment.tasks",
+        ],
     )
 
     return celery_app
