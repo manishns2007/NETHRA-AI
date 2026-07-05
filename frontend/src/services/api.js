@@ -80,4 +80,10 @@ export const refreshEvidenceEnrichment = async (evidenceId) => {
   return api.post(`/enrichment/evidence/${evidenceId}/refresh`);
 };
 
+// ── Assistant API ─────────────────────────────────────────────────────────────
+
+export const askAssistant = async (payload) => {
+  return api.post('/assistant/chat', payload);
+};
+
 export default api;

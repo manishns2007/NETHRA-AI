@@ -21,8 +21,11 @@ class Settings(BaseSettings):
     ABUSEIPDB_API_KEY: str | None = None
     HIBP_API_KEY: str | None = None
     WHOIS_API_KEY: str | None = None
-    GEOIP_API_KEY: str | None = None
+    GEOIP_API_KEY: str | None = None          # MaxMind licence key (GeoIP2 API / GeoLite2 download)
+    MAXMIND_ACCOUNT_ID: str | None = None     # MaxMind account ID (required for web-service API)
+    GEOIP_DB_PATH: str | None = None          # Absolute path to GeoLite2-City.mmdb (optional local DB)
     BLOCKCHAIN_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
 
     class Config:
         case_sensitive = True

@@ -17,6 +17,7 @@ class ExtractionMethodOCR(str, enum.Enum):
 class ExtractionMethodNER(str, enum.Enum):
     SPACY = "SPACY"
     REGEX = "REGEX"
+    STRUCTURED = "STRUCTURED"
 
 class EntityType(str, enum.Enum):
     PERSON = "PERSON"

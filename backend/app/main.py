@@ -24,6 +24,8 @@ app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intellige
 app.include_router(graph.router, prefix=f"{settings.API_V1_STR}/graph", tags=["graph"])
 app.include_router(analysis.router, prefix=f"{settings.API_V1_STR}/analysis", tags=["analysis"])
 app.include_router(enrichment.router, prefix=f"{settings.API_V1_STR}/enrichment", tags=["enrichment"])
+from app.api.routes import assistant
+app.include_router(assistant.router, prefix=f"{settings.API_V1_STR}/assistant", tags=["assistant"])
 
 @app.get("/")
 def root():
