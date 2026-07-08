@@ -55,6 +55,7 @@ class HybridEvidenceRetriever(BaseRetriever):
         intent: str | None = None,
         indicators: dict[str, list[str]] | None = None,
         clean_keywords: list[str] | None = None,
+        evidence_id: str | None = None,
     ) -> dict[str, Any]:
         """
         Run the hybrid retrieval pipeline and return ranked evidence.
@@ -65,10 +66,45 @@ class HybridEvidenceRetriever(BaseRetriever):
             intent:         Classified intent string (optional, for future routing).
             indicators:     Pre-extracted regex indicators {type: [value, ...]}.
             clean_keywords: Stopword-free keyword list.
+            evidence_id:    If set, BYPASS hybrid scoring and return ONLY this evidence.
+                            This is used when the user has pinned a specific file in the UI.
 
         Returns:
             {"evidence": [...]}  compatible with the original contract.
         """
+        # ------------------------------------------------------------------ #
+        # PINNED MODE: If the caller specified an evidence_id, skip the full  #
+        # corpus search entirely and return only that document.               #
+        # ------------------------------------------------------------------ #
+        if evidence_id:
+            ev = (
+                self.db.query(Evidence)
+                .filter(Evidence.evidence_id == evidence_id)
+                .first()
+            )
+            if not ev:
+                logger.warning("Pinned evidence_id=%s not found in database.", evidence_id)
+                return {"evidence": []}
+
+            ocr_text = "\n".join(
+                ocr.extracted_text for ocr in ev.ocr_results
+                if ocr.extracted_text
+            )
+            logger.info(
+                "HybridRetriever [PINNED MODE]: returning only evidence_id=%s title=%s",
+                evidence_id, ev.original_filename,
+            )
+            return {
+                "evidence": [{
+                    "evidence_id": ev.evidence_id,
+                    "title": ev.original_filename,
+                    "uploaded_at": str(ev.uploaded_at),
+                    "file_size": ev.file_size_bytes,
+                    "extracted_text": ocr_text,
+                    "retrieval_score": 200.0,  # Guaranteed highest score
+                    "retrieval_reasons": ["pinned_by_investigator"],
+                }]
+            }
         indicators = indicators or {}
         clean_keywords = clean_keywords or _fallback_keywords(question)
 

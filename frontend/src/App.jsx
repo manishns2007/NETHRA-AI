@@ -1,86 +1,158 @@
-import React, { useState } from 'react';
-import EvidenceUploader from './components/EvidenceVault/EvidenceUploader';
-import EvidenceTable from './components/EvidenceVault/EvidenceTable';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation, useNavigate, Link } from 'react-router-dom';
+import EvidenceVaultDashboard from './components/EvidenceVault/EvidenceVaultDashboard';
 import Assistant from './components/Assistant/Assistant';
-import { getEvidence } from './services/api';
+import LandingPage from './components/Landing/LandingPage';
+import { InvestigationProvider } from './context/InvestigationContext';
 
-function App() {
-  const [evidenceList, setEvidenceList] = useState([]);
-  const [activeTab, setActiveTab] = useState('vault');
+const VaultIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+const BotIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/>
+  </svg>
+);
 
-  const fetchEvidence = async () => {
-    try {
-      const res = await getEvidence();
-      setEvidenceList(res.data);
-    } catch (error) {
-      console.error("Failed to fetch evidence", error);
-    }
-  };
+const TABS = [
+  { id: 'vault',     path: '/vault',     label: 'Evidence Vault', Icon: VaultIcon },
+  { id: 'assistant', path: '/assistant', label: 'AI Assistant',   Icon: BotIcon   },
+];
 
-  React.useEffect(() => {
-    fetchEvidence();
-  }, []);
-
-  const handleUploadSuccess = () => {
-    fetchEvidence();
-  };
+// Layout wrapper for authenticated/dashboard routes
+const DashboardLayout = ({ children }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8 font-sans">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8 border-b border-slate-800 pb-6 flex justify-between items-end">
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* ── Navbar ── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 28px',
+        background: 'rgba(10,10,15,0.85)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+      }}>
+        {/* Logo */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          {/* Gradient-border logo mark */}
+          <div style={{
+            width: '34px', height: '34px',
+            borderRadius: '9px',
+            background: 'linear-gradient(135deg, #ef4444, #3b82f6)',
+            padding: '1.5px',
+            boxShadow: '-6px 0 20px rgba(239,68,68,0.3), 6px 0 20px rgba(59,130,246,0.3)',
+          }}>
+            <div style={{
+              width: '100%', height: '100%', borderRadius: '7.5px',
+              background: '#0d0d17',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '15px', fontWeight: 700, color: '#fff', letterSpacing: '-0.03em',
+            }}>N</div>
+          </div>
           <div>
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 tracking-tight">
-              NETHRA AI
-            </h1>
-            <p className="text-slate-400 mt-2 text-lg">Digital Evidence Vault & Investigation</p>
-          </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab('vault')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'vault' 
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-600/50' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              Evidence Vault
-            </button>
-            <button
-              onClick={() => setActiveTab('assistant')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'assistant' 
-                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-600/50' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              AI Assistant
-            </button>
-          </div>
-        </header>
-
-        <main>
-          {activeTab === 'vault' ? (
-            <div className="space-y-12">
-              <section>
-                <h2 className="text-2xl font-semibold text-slate-200 mb-6">Ingest Evidence</h2>
-                <EvidenceUploader onUploadSuccess={handleUploadSuccess} />
-              </section>
-
-              <section>
-                <h2 className="text-2xl font-semibold text-slate-200 mb-6">Secured Evidence</h2>
-                <EvidenceTable evidenceList={evidenceList} />
-              </section>
+            <div style={{
+              fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em',
+              background: 'linear-gradient(90deg, #f87171, #a78bfa, #60a5fa, #f87171)',
+              backgroundSize: '300%',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              animation: 'shimmer 5s linear infinite',
+            }}>NETHRA AI</div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.07em', marginTop: '-1px' }}>
+              DIGITAL FORENSICS PLATFORM
             </div>
-          ) : (
-            <section>
-              <Assistant />
-            </section>
-          )}
-        </main>
-      </div>
+          </div>
+        </Link>
+
+        {/* Tab switcher */}
+        <nav style={{
+          display: 'flex', gap: '4px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: '10px', padding: '3px',
+        }}>
+          {TABS.map(({ id, path, label, Icon }) => {
+            const active = location.pathname.startsWith(path);
+            return (
+              <button
+                key={id}
+                onClick={() => navigate(path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  padding: '7px 18px', borderRadius: '8px',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: 500,
+                  transition: 'all 0.22s ease',
+                  background: active
+                    ? id === 'vault'
+                      ? 'rgba(239,68,68,0.12)'
+                      : 'rgba(59,130,246,0.12)'
+                    : 'transparent',
+                  color: active
+                    ? id === 'vault' ? '#f87171' : '#60a5fa'
+                    : 'rgba(255,255,255,0.35)',
+                  outline: active
+                    ? `1px solid ${id === 'vault' ? 'rgba(239,68,68,0.28)' : 'rgba(59,130,246,0.28)'}`
+                    : '1px solid transparent',
+                  boxShadow: active
+                    ? `0 0 16px ${id === 'vault' ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)'}`
+                    : 'none',
+                }}
+              >
+                <Icon /> {label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{
+            width: '7px', height: '7px', borderRadius: '50%',
+            background: '#22c55e',
+            boxShadow: '0 0 8px rgba(34,197,94,0.7)',
+            animation: 'glowPulse 2.5s ease-in-out infinite',
+          }} />
+          System online
+        </div>
+      </header>
+
+      {/* ── Content ── */}
+      {/* Removed strict minHeight/overflow locks to allow natural page scrolling */}
+      <main style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {children}
+      </main>
     </div>
   );
-}
+};
 
-export default App;
+export default function App() {
+  return (
+    <InvestigationProvider>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route 
+          path="/vault" 
+          element={
+            <DashboardLayout>
+              <EvidenceVaultDashboard />
+            </DashboardLayout>
+          } 
+        />
+        <Route 
+          path="/assistant" 
+          element={
+            <DashboardLayout>
+              <Assistant />
+            </DashboardLayout>
+          } 
+        />
+      </Routes>
+    </InvestigationProvider>
+  );
+}

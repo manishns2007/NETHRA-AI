@@ -1,138 +1,286 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { askAssistant } from '../../services/api';
+import { useInvestigation } from '../../context/InvestigationContext';
+import { Shield, Paperclip, Send, Brain, Target, Search } from 'lucide-react';
+import { Panel } from '../Dashboard/DashboardWidgets';
+import { Dropdown } from '../UI/Dropdown';
 
-const Assistant = () => {
+const AIAvatar = () => (
+  <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <Brain size={18} color="#60a5fa" />
+  </div>
+);
+
+const UserAvatar = () => (
+  <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: 'var(--text-2)' }}>
+    INV
+  </div>
+);
+
+const TypingDots = () => (
+  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', padding: '8px 4px' }}>
+    {[0, 1, 2].map(i => (
+      <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#60a5fa', animation: 'typingBounce 1s infinite ease-in-out', animationDelay: `${i * 0.15}s` }} />
+    ))}
+  </div>
+);
+
+const AIContent = ({ content, isLatest, onType }) => {
+  const [displayed, setDisplayed] = useState(isLatest ? '' : content);
+  
+  useEffect(() => {
+    if (!isLatest) {
+      setDisplayed(content);
+      return;
+    }
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayed(content.slice(0, i));
+      if (onType && i % 4 === 0) onType();
+      i++;
+      if (i > content.length) clearInterval(interval);
+    }, 10);
+    return () => clearInterval(interval);
+  }, [content, isLatest, onType]);
+
+  const isTyping = isLatest && displayed.length < content.length;
+
+  return (
+    <div style={{ fontFamily: 'inherit' }}>
+      {displayed}
+      {isTyping && <span style={{ display: 'inline-block', width: '6px', height: '14px', background: '#60a5fa', marginLeft: '4px', verticalAlign: 'middle', animation: 'cursorBlink 1s step-end infinite' }} />}
+    </div>
+  );
+};
+
+export default function Assistant() {
+  const { evidenceList, selectedEvidenceId, setSelectedEvidenceId, selectedEvidenceItem, intelligence } = useInvestigation();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+
+  const handleInput = (e) => {
+    setInputValue(e.target.value);
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+    }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+    e?.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
 
     const userMessage = { role: 'user', content: inputValue };
-    
-    // Prepare history for API, excluding the current message
     const historyPayload = messages.map(m => ({ role: m.role, content: m.content }));
-    
-    setMessages((prev) => [...prev, userMessage]);
+
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setIsLoading(true);
 
     try {
-      // Assuming askAssistant takes an object with question and history
-      const response = await askAssistant({ question: userMessage.content, history: historyPayload });
-      const aiMessage = { 
-        role: 'ai', 
-        content: response.data.answer, 
+      const response = await askAssistant({
+        question: userMessage.content,
+        history: historyPayload,
+        evidence_id: selectedEvidenceId || null,  // ← pin to selected evidence
+      });
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: response.data.answer,
         confidence: response.data.confidence,
-        sources: response.data.sources 
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+        sources: response.data.sources,
+      }]);
     } catch (error) {
-      console.error("Assistant Error:", error);
-      const errorMessage = { 
-        role: 'ai', 
-        content: "Sorry, I encountered an error while processing your request. Please ensure the backend is running and API keys are configured." 
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: 'Error: Failed to connect to NETHRA Intelligence backend.',
+      }]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const evidenceOptions = [
+    { value: 'NONE', label: '-- Ask general investigation questions --' },
+    ...evidenceList.map(e => ({ value: e.evidence_id, label: e.original_filename }))
+  ];
+
   return (
-    <div className="flex flex-col h-[700px] bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
-      <div className="bg-slate-800 p-4 border-b border-slate-700">
-        <h2 className="text-xl font-semibold text-slate-200">AI Investigation Assistant</h2>
-        <p className="text-sm text-slate-400">Ask questions about your digital evidence.</p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.length === 0 && (
-          <div className="flex items-center justify-center h-full text-slate-500">
-            Start by asking a question about the evidence vault.
-          </div>
-        )}
+    <>
+      <style>{`
+        @keyframes typingBounce { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-4px); opacity: 1; } }
+        @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .asst-textarea::-webkit-scrollbar { width: 4px; }
+        .asst-textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+      `}</style>
+      
+      <div style={{ display: 'flex', flex: 1, padding: '24px 28px', gap: '20px', minHeight: '700px' }}>
         
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg p-4 ${
-              msg.role === 'user' 
-                ? 'bg-blue-600 text-white rounded-br-none' 
-                : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
-            }`}>
-              <div className="whitespace-pre-wrap">{msg.content}</div>
-              
-              {msg.role === 'ai' && msg.confidence !== undefined && (
-                <div className="mt-2 text-xs font-medium text-emerald-400">
-                  Confidence: {Math.round(msg.confidence * 100)}%
+        {/* Left Panel: Investigation Context */}
+        <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Panel title="Investigation Context" icon={Target}>
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '4px' }}>Active Operation</div>
+              <div style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>Operation Phantom</div>
+              <div className="mono-sm" style={{ color: '#60a5fa', marginTop: '2px' }}>ID: INV-2026-092</div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>Active Evidence Focus</div>
+              <Dropdown 
+                value={selectedEvidenceId || 'NONE'}
+                onChange={val => setSelectedEvidenceId(val === 'NONE' ? null : val)}
+                options={evidenceOptions}
+                placeholder="Select evidence context..."
+              />
+            </div>
+
+            {selectedEvidenceItem && (
+              <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-1)', marginBottom: '8px', wordBreak: 'break-all' }}>
+                  {selectedEvidenceItem.original_filename}
                 </div>
-              )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>
+                  <span>Source:</span> <span style={{ color: 'var(--text-2)' }}>{selectedEvidenceItem.source_type}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-3)' }}>
+                  <span>Entities Extracted:</span> <span style={{ color: 'var(--text-2)' }}>{intelligence?.entities?.length || 0}</span>
+                </div>
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Suggested Actions" icon={Brain}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {['Summarize selected evidence', 'List extracted entities', 'Detect anomalies', 'Generate Investigation Report'].map((action, i) => (
+                <button key={i} onClick={() => { setInputValue(action); textareaRef.current?.focus(); }} style={{ textAlign: 'left', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', color: 'var(--text-2)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background='rgba(59,130,246,0.1)'} onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                  {action}
+                </button>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        {/* Center Panel: Assistant Conversation */}
+        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+          
+          {/* Header */}
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Brain size={18} color="#60a5fa" />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-1)', letterSpacing: '0.05em' }}>NETHRA Intelligence Assistant</span>
+            </div>
+            {selectedEvidenceItem && (
+              <div style={{ fontSize: '11px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.2)' }}>
+                Context: {selectedEvidenceItem.original_filename}
+              </div>
+            )}
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {messages.length === 0 && !isLoading && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                <Search size={32} color="var(--text-3)" style={{ marginBottom: '16px' }} />
+                <p style={{ color: 'var(--text-3)', fontSize: '14px' }}>Ask a question about the current investigation or selected evidence.</p>
+              </div>
+            )}
+
+            {messages.map((msg, idx) => {
+              const isLatestAI = msg.role === 'ai' && idx === messages.length - 1;
+              const isUser = msg.role === 'user';
               
-              {msg.sources && msg.sources.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-600">
-                  <h4 className="text-sm font-semibold text-slate-400 mb-2">Sources</h4>
-                  <ul className="text-xs space-y-1">
-                    {msg.sources.map((src, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-                        <span className="font-medium text-indigo-300">{src.type}:</span> 
-                        <span className="text-slate-300">
-                          {src.title || src.name || src.id}
+              return (
+                <div key={idx} style={{ display: 'flex', gap: '16px', flexDirection: isUser ? 'row-reverse' : 'row' }}>
+                  {isUser ? <UserAvatar /> : <AIAvatar />}
+                  
+                  <div style={{
+                    maxWidth: '80%', padding: '16px 20px', borderRadius: '8px', fontSize: '14px', lineHeight: 1.6,
+                    background: isUser ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.02)',
+                    border: isUser ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(255,255,255,0.05)',
+                    color: isUser ? '#e2e8f0' : 'var(--text-1)',
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  }}>
+                    {isUser ? msg.content : <AIContent content={msg.content} isLatest={isLatestAI} onType={scrollToBottom} />}
+                    
+                    {!isUser && msg.confidence !== undefined && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontSize: '11px', color: '#34d399', background: 'rgba(52,211,153,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                          Confidence: {Math.round(msg.confidence * 100)}%
                         </span>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-slate-800 text-slate-400 rounded-lg rounded-bl-none p-4 flex items-center gap-2 border border-slate-700">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></div>
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              <span className="ml-2">Analyzing evidence...</span>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+              );
+            })}
 
-      <div className="p-4 bg-slate-800 border-t border-slate-700">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="E.g., What emails are mentioned in the WhatsApp chat?"
-            className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !inputValue.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            Ask
-          </button>
-        </form>
+            {isLoading && (
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <AIAvatar />
+                <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                  <TypingDots />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ position: 'relative', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', transition: 'border-color 0.2s' }}>
+              <textarea
+                ref={textareaRef}
+                className="asst-textarea"
+                placeholder={selectedEvidenceItem ? `Ask about ${selectedEvidenceItem.original_filename}...` : "Type your query here..."}
+                value={inputValue}
+                onChange={handleInput}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+                disabled={isLoading}
+                rows={1}
+                style={{
+                  width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+                  color: '#fff', fontSize: '14px', padding: '16px 50px 16px 16px', minHeight: '52px', maxHeight: '200px'
+                }}
+              />
+              <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', gap: '8px' }}>
+                <button 
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-3)', padding: '8px', cursor: 'pointer', borderRadius: '6px' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  title="Attach Evidence"
+                >
+                  <Paperclip size={16} />
+                </button>
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isLoading || !inputValue.trim()}
+                  style={{
+                    background: inputValue.trim() ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                    color: inputValue.trim() ? '#fff' : 'var(--text-4)',
+                    border: 'none', padding: '8px 12px', borderRadius: '6px',
+                    cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', transition: 'all 0.2s'
+                  }}
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '8px', textAlign: 'center' }}>
+              NETHRA AI Investigation Assistant. Responses are AI-generated and should be verified against source evidence.
+            </div>
+          </div>
+
+        </div>
       </div>
-    </div>
+    </>
   );
-};
-
-export default Assistant;
+}

@@ -61,6 +61,7 @@ def ask_assistant(db: Session, request: AssistantRequest) -> AssistantResponse:
         intent=intent.value,
         indicators=indicators,
         clean_keywords=clean_keywords,
+        evidence_id=request.evidence_id,   # ← pin to selected evidence when set
     )
     evidence_items = evidence_data.get("evidence", [])
     evidence_ids = [ev["evidence_id"] for ev in evidence_items]
@@ -118,7 +119,12 @@ def ask_assistant(db: Session, request: AssistantRequest) -> AssistantResponse:
         intent=intent.value,
         detected_entities=indicators if indicators else None,
     )
-    instructions_str = ContextBuilder.build_instructions(empty_result=empty_result, rel_category=rel_category)
+    instructions_str = ContextBuilder.build_instructions(
+        empty_result=empty_result,
+        rel_category=rel_category,
+        pinned_evidence_id=request.evidence_id,
+        pinned_evidence_title=evidence_items[0]["title"] if request.evidence_id and evidence_items else None,
+    )
     context_duration = time.time() - t0
 
     # 9. LLM generation

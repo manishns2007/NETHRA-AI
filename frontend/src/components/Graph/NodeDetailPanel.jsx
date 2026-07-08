@@ -1,47 +1,34 @@
 /**
- * NodeDetailPanel.jsx
- *
- * Slide-in panel showing full details for the selected graph node.
- * Includes a dynamically-rendered Threat Intelligence section that reads from
- * Entity.properties. Adding a new enrichment provider requires no frontend changes —
- * any new key in properties is rendered automatically.
- *
- * Props:
- *   node     - Cytoscape node data object or null
- *   onClose  - callback to deselect node
+ * NodeDetailPanel.jsx — themed with blue/red ambient design
  */
 import React, { useState } from 'react';
 import { ENTITY_LABELS, getNodeColor } from './graphConfig';
-import { refreshEntityEnrichment, getEntityEnrichment } from '../../services/api';
+import { refreshEntityEnrichment } from '../../services/api';
 
-// ── Provider icon/color map ─────────────────────────────────────────────────
-// Used only for cosmetic purposes. Unknown providers will use a default style.
 const PROVIDER_META = {
-  whois:      { label: 'WHOIS',           color: '#60a5fa' },
-  geoip:      { label: 'GeoIP',           color: '#34d399' },
-  virustotal: { label: 'VirusTotal',      color: '#f87171' },
-  abuseipdb:  { label: 'AbuseIPDB',       color: '#fb923c' },
-  hibp:       { label: 'HaveIBeenPwned',  color: '#a78bfa' },
-  blockchain: { label: 'Blockchain',      color: '#fbbf24' },
+  whois:      { label: 'WHOIS',          color: '#60a5fa' },
+  geoip:      { label: 'GeoIP',          color: '#34d399' },
+  virustotal: { label: 'VirusTotal',     color: '#f87171' },
+  abuseipdb:  { label: 'AbuseIPDB',      color: '#fb923c' },
+  hibp:       { label: 'HaveIBeenPwned', color: '#a78bfa' },
+  blockchain: { label: 'Blockchain',     color: '#fbbf24' },
 };
-
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function DetailRow({ label, value, mono = false }) {
-  if (value === null || value === undefined || value === '') return null;
-  return (
-    <div className="py-2 border-b border-slate-800 last:border-0">
-      <span className="block text-xs text-slate-500 uppercase tracking-wider mb-0.5">{label}</span>
-      <span className={`text-sm text-slate-200 break-all ${mono ? 'font-mono' : ''}`}>
-        {String(value)}
-      </span>
-    </div>
-  );
-}
 
 function formatDate(iso) {
   if (!iso) return null;
   try { return new Date(iso).toLocaleString(); } catch { return iso; }
+}
+
+function DetailRow({ label, value, mono = false }) {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.28)', marginBottom: '2px' }}>{label}</span>
+      <span style={{ fontSize: '12.5px', color: '#e2e8f0', wordBreak: 'break-all', fontFamily: mono ? "'JetBrains Mono','Fira Code',monospace" : 'inherit' }}>
+        {String(value)}
+      </span>
+    </div>
+  );
 }
 
 function ProviderSection({ providerKey, data }) {
@@ -52,45 +39,42 @@ function ProviderSection({ providerKey, data }) {
   };
 
   return (
-    <div className="mb-3 rounded-lg border border-slate-700 overflow-hidden">
-      {/* Provider header */}
+    <div style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/80 text-left hover:bg-slate-800 transition-colors"
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 12px', background: 'rgba(255,255,255,0.04)',
+          border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.18s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
       >
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: meta.color }}
-          />
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: meta.color }}>
-            {meta.label}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: meta.color, boxShadow: `0 0 5px ${meta.color}`, flexShrink: 0 }} />
+          <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: meta.color }}>{meta.label}</span>
         </div>
-        <span className="text-slate-500 text-xs">{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>{open ? '▲' : '▼'}</span>
       </button>
 
-      {/* Provider data */}
       {open && (
-        <div className="px-3 py-2 bg-slate-900/60">
+        <div style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.2)' }}>
           {Object.entries(data).length === 0 ? (
-            <p className="text-xs text-slate-500 italic">No data returned</p>
+            <p style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>No data returned</p>
           ) : (
             Object.entries(data).map(([key, value]) => {
-              if (key === 'last_updated') return null; // Render timestamp at end
-              const displayValue = typeof value === 'object'
-                ? JSON.stringify(value, null, 2)
-                : String(value);
+              if (key === 'last_updated') return null;
+              const dv = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
               return (
-                <div key={key} className="py-1.5 border-b border-slate-800/60 last:border-0">
-                  <span className="block text-xs text-slate-500 mb-0.5">{key}</span>
-                  <span className="text-xs text-slate-200 font-mono break-all">{displayValue}</span>
+                <div key={key} style={{ padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <span style={{ display: 'block', fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginBottom: '1px' }}>{key}</span>
+                  <span style={{ fontSize: '11.5px', color: '#e2e8f0', fontFamily: 'monospace', wordBreak: 'break-all' }}>{dv}</span>
                 </div>
               );
             })
           )}
           {data.last_updated && (
-            <p className="text-xs text-slate-600 mt-1 pt-1 border-t border-slate-800">
+            <p style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.2)', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               Updated: {formatDate(data.last_updated)}
             </p>
           )}
@@ -102,124 +86,119 @@ function ProviderSection({ providerKey, data }) {
 
 function ThreatIntelSection({ node }) {
   const [loading, setLoading] = useState(false);
-  const [queued, setQueued] = useState(false);
-  const [enrichment, setEnrichment] = useState(null);
+  const [queued, setQueued]   = useState(false);
 
-  // Pull enrichment data from node.properties (already stored in the entity)
-  // or from a separate fetch if needed
-  const rawProperties = node.properties || {};
-  // Filter out non-enrichment system keys if any
+  const rawProperties  = node.properties || {};
   const enrichmentKeys = Object.keys(rawProperties);
 
   const handleRefresh = async () => {
     setLoading(true);
-    try {
-      await refreshEntityEnrichment(node.id);
-      setQueued(true);
-    } catch (err) {
-      console.error('Failed to queue enrichment:', err);
-    } finally {
-      setLoading(false);
-    }
+    try { await refreshEntityEnrichment(node.id); setQueued(true); }
+    catch (err) { console.error('Failed to queue enrichment:', err); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="mt-4">
-      {/* Section header */}
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+    <div style={{ marginTop: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <p style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: 'rgba(255,255,255,0.3)' }}>
           Threat Intelligence
         </p>
         <button
           onClick={handleRefresh}
           disabled={loading || queued}
-          className="text-xs px-2 py-0.5 rounded border transition-colors
-            border-slate-600 text-slate-400 hover:border-blue-500 hover:text-blue-400
-            disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            fontSize: '11px', padding: '3px 10px', borderRadius: '6px', cursor: 'pointer',
+            background: queued ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)',
+            border: queued ? '1px solid rgba(34,197,94,0.25)' : '1px solid rgba(59,130,246,0.25)',
+            color: queued ? '#22c55e' : '#60a5fa',
+            opacity: loading ? 0.4 : 1, transition: 'all 0.2s',
+          }}
         >
           {loading ? 'Queuing…' : queued ? '✓ Queued' : 'Enrich'}
         </button>
       </div>
 
       {queued && (
-        <div className="mb-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30">
-          <p className="text-xs text-blue-300">
-            Enrichment task queued. Refresh the node after the Celery worker processes it.
-          </p>
+        <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+          <p style={{ fontSize: '12px', color: '#60a5fa' }}>Enrichment task queued. Refresh the node after the Celery worker processes it.</p>
         </div>
       )}
 
       {enrichmentKeys.length === 0 ? (
-        <div className="space-y-2">
-          {/* Render placeholder cards for all known providers */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {Object.entries(PROVIDER_META).map(([key, meta]) => (
-            <div
-              key={key}
-              className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-800 bg-slate-800/30"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0" />
-                <span className="text-xs text-slate-500 font-medium">{meta.label}</span>
+            <div key={key} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '7px 12px', borderRadius: '8px',
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
+                <span style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{meta.label}</span>
               </div>
-              <span className="text-xs text-slate-600 italic">Not Enriched</span>
+              <span style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Not Enriched</span>
             </div>
           ))}
         </div>
       ) : (
-        <div>
-          {enrichmentKeys.map(key => (
-            <ProviderSection key={key} providerKey={key} data={rawProperties[key]} />
-          ))}
-        </div>
+        enrichmentKeys.map(key => <ProviderSection key={key} providerKey={key} data={rawProperties[key]} />)
       )}
     </div>
   );
 }
 
-
-// ── Main Panel ───────────────────────────────────────────────────────────────
-
+/* ── Main ── */
 export default function NodeDetailPanel({ node, onClose }) {
   if (!node) return null;
 
-  const color    = getNodeColor(node.entity_type);
+  const color     = getNodeColor(node.entity_type);
   const typeLabel = ENTITY_LABELS[node.entity_type] ?? node.entity_type;
-
-  // EVIDENCE nodes don't get enriched
   const isEnrichable = node.entity_type !== 'EVIDENCE';
 
   return (
-    <div className="w-80 flex-shrink-0 bg-slate-900 border-l border-slate-800 flex flex-col overflow-hidden">
+    <div style={{
+      width: '300px', flexShrink: 0,
+      background: 'rgba(10,10,15,0.95)',
+      borderLeft: '1px solid rgba(255,255,255,0.07)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
       {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3 border-b border-slate-800"
-        style={{ borderLeftColor: color, borderLeftWidth: '3px' }}
-      >
-        <div className="min-w-0">
-          <span
-            className="text-xs font-semibold px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: color + '25', color }}
-          >
-            {typeLabel}
-          </span>
-          <p className="text-sm text-slate-200 font-medium mt-1 truncate" title={node.fullLabel}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderLeft: `3px solid ${color}`,
+      }}>
+        <div style={{ minWidth: 0 }}>
+          <span style={{
+            fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+            background: `${color}22`, border: `1px solid ${color}40`,
+            color, borderRadius: '6px', padding: '2px 7px', display: 'inline-block',
+          }}>{typeLabel}</span>
+          <p style={{ fontSize: '13px', fontWeight: 500, color: '#e2e8f0', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={node.fullLabel}>
             {node.fullLabel}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="ml-2 flex-shrink-0 text-slate-500 hover:text-slate-200 transition-colors p-1 rounded hover:bg-slate-800"
-          aria-label="Close panel"
+          style={{
+            marginLeft: '8px', flexShrink: 0,
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '6px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+            padding: '4px', lineHeight: 0, transition: 'all 0.18s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-4 py-2">
-        {/* Core entity details */}
+      {/* Body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
         <DetailRow label="Entity Type"  value={typeLabel} />
         <DetailRow label="Value"        value={node.fullLabel} mono />
         <DetailRow label="Normalized"   value={node.normalized_value} mono />
@@ -228,7 +207,6 @@ export default function NodeDetailPanel({ node, onClose }) {
         <DetailRow label="Last Seen"    value={formatDate(node.last_seen)} />
         <DetailRow label="Node ID"      value={node.id} mono />
 
-        {/* Threat Intelligence Section */}
         {isEnrichable && <ThreatIntelSection node={node} />}
       </div>
     </div>

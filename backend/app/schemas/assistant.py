@@ -26,6 +26,7 @@ class SourceMetadata(BaseModel):
 class AssistantRequest(BaseModel):
     question: str = Field(..., description="The investigation question to ask the AI.")
     history: List[Dict[str, str]] = Field(default=[], description="Previous conversation messages (max 5-10 recommended).")
+    evidence_id: Optional[str] = Field(default=None, description="If set, restrict retrieval ONLY to this evidence file. Do not search the full corpus.")
 
 class AssistantResponse(BaseModel):
     answer: str

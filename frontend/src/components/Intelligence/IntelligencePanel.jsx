@@ -5,144 +5,208 @@ import OCRPreview from './OCRPreview';
 import EntityList from './EntityList';
 import InvestigationGraph from '../Graph/InvestigationGraph';
 
+const CloseIco = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+const TABS = [
+  { id: 'status',   label: 'Status & Logs' },
+  { id: 'metadata', label: 'Metadata'       },
+  { id: 'ocr',      label: 'Extracted Text' },
+  { id: 'entities', label: 'Named Entities' },
+  { id: 'graph',    label: '🕸 Graph'        },
+];
+
 export default function IntelligencePanel({ evidenceId, onClose }) {
   const [activeTab, setActiveTab] = useState('status');
-  const [data, setData] = useState({
-    status: null,
-    metadata: null,
-    ocr: null,
-    entities: null,
-  });
+  const [data, setData] = useState({ status: null, metadata: null, ocr: null, entities: null });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
     if (!evidenceId) return;
-    
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+    const load = async () => {
+      setLoading(true); setError(null);
       try {
-        const [statusRes, metaRes, ocrRes, entitiesRes] = await Promise.all([
-          getIntelligenceStatus(evidenceId),
-          getIntelligenceMetadata(evidenceId),
-          getIntelligenceOCR(evidenceId),
-          getIntelligenceEntities(evidenceId),
+        const fetchGracefully = async (fn, id) => {
+          try {
+            const res = await fn(id);
+            return res.data;
+          } catch (e) {
+            return null; // Return null if 404 or error, allowing panel to still open
+          }
+        };
+
+        const [s, m, o, e] = await Promise.all([
+          fetchGracefully(getIntelligenceStatus, evidenceId),
+          fetchGracefully(getIntelligenceMetadata, evidenceId),
+          fetchGracefully(getIntelligenceOCR, evidenceId),
+          fetchGracefully(getIntelligenceEntities, evidenceId),
         ]);
         
-        setData({
-          status: statusRes.data,
-          metadata: metaRes.data,
-          ocr: ocrRes.data,
-          entities: entitiesRes.data,
-        });
+        setData({ status: s, metadata: m, ocr: o, entities: e });
       } catch (err) {
-        console.error("Failed to load intelligence data", err);
-        setError("Failed to load intelligence data.");
-      } finally {
-        setLoading(false);
-      }
+        setError('Failed to load intelligence data.');
+      } finally { setLoading(false); }
     };
-    
-    fetchData();
+    load();
   }, [evidenceId]);
 
   if (!evidenceId) return null;
 
-  const renderTabContent = () => {
-    if (loading) return <div className="p-8 text-center text-slate-400">Loading intelligence...</div>;
-    if (error) return <div className="p-8 text-center text-red-400">{error}</div>;
+  /* ── Status tab content ── */
+  const renderStatus = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: '10px', padding: '12px 16px',
+      }}>
+        <div style={{
+          width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+          background: data.status?.status === 'PROCESSED' ? '#22c55e'
+            : data.status?.status === 'PROCESSING' ? '#3b82f6'
+            : '#ef4444',
+          boxShadow: `0 0 8px ${data.status?.status === 'PROCESSED' ? '#22c55e' : data.status?.status === 'PROCESSING' ? '#3b82f6' : '#ef4444'}`,
+          animation: 'glowPulse 2s infinite',
+        }} />
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Processing Status</div>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginTop: '1px' }}>{data.status?.status || 'UNKNOWN'}</div>
+        </div>
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          Processing Logs
+        </div>
+        {data.status?.logs?.length > 0 ? (
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', listStyle: 'none', margin: 0, padding: 0 }}>
+            {data.status.logs.map(log => {
+              const c = log.status === 'SUCCESS' ? '#22c55e' : log.status === 'FAILED' ? '#ef4444' : '#3b82f6';
+              return (
+                <li key={log.id}>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-3)', display: 'block' }}>
+                    {new Date(log.timestamp).toLocaleString()}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#e2e8f0' }}>
+                    <span style={{ fontWeight: 600, color: c, marginRight: '6px' }}>[{log.step}]</span>
+                    {log.message}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p style={{ fontSize: '13px', color: 'var(--text-3)', margin: 0 }}>No logs available.</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    if (loading) return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '12px', color: 'var(--text-3)' }}>
+        <div className="spin" style={{ width: '24px', height: '24px', border: '2px solid rgba(59,130,246,0.2)', borderTop: '2px solid #3b82f6', borderRadius: '50%' }} />
+        Loading intelligence…
+      </div>
+    );
+    if (error) return <div style={{ padding: '40px', textAlign: 'center', color: '#ef4444', fontSize: '13px' }}>{error}</div>;
 
     switch (activeTab) {
-      case 'status':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-200">Processing Status: {data.status?.status || 'UNKNOWN'}</h3>
-            <div className="bg-slate-900 rounded p-4 border border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-400 mb-3 border-b border-slate-800 pb-2">Processing Logs</h4>
-              {data.status?.logs?.length > 0 ? (
-                <ul className="space-y-3">
-                  {data.status.logs.map((log) => (
-                    <li key={log.id} className="text-sm text-slate-300">
-                      <span className="text-xs text-slate-500 block">{new Date(log.timestamp).toLocaleString()}</span>
-                      <span className={`font-semibold mr-2 ${log.status === 'SUCCESS' ? 'text-green-400' : log.status === 'FAILED' ? 'text-red-400' : 'text-blue-400'}`}>[{log.step}]</span>
-                      {log.message}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-500">No logs available.</p>
-              )}
-            </div>
-          </div>
-        );
-      case 'metadata':
-        return <MetadataViewer metadata={data.metadata} />;
-      case 'ocr':
-        return <OCRPreview ocrResults={data.ocr} />;
-      case 'entities':
-        return <EntityList entities={data.entities} />;
-      case 'graph':
-        return (
-          <div className="h-[520px]">
-            <InvestigationGraph evidenceId={evidenceId} />
-          </div>
-        );
-      default:
-        return null;
+      case 'status':   return renderStatus();
+      case 'metadata': return data.metadata ? <MetadataViewer metadata={data.metadata} /> : <div style={{ color: 'var(--text-3)', padding: '20px', textAlign: 'center', fontSize: '13px' }}>No metadata found.</div>;
+      case 'ocr':      return data.ocr ? <OCRPreview ocrResults={data.ocr} /> : <div style={{ color: 'var(--text-3)', padding: '20px', textAlign: 'center', fontSize: '13px' }}>No OCR data found.</div>;
+      case 'entities': return data.entities ? <EntityList entities={data.entities} /> : <div style={{ color: 'var(--text-3)', padding: '20px', textAlign: 'center', fontSize: '13px' }}>No entities extracted.</div>;
+      case 'graph':    return <div style={{ height: '520px' }}><InvestigationGraph evidenceId={evidenceId} /></div>;
+      default: return null;
     }
   };
 
-  const tabs = [
-    { id: 'status',   label: 'Status & Logs' },
-    { id: 'metadata', label: 'Metadata' },
-    { id: 'ocr',      label: 'Extracted Text' },
-    { id: 'entities', label: 'Named Entities' },
-    { id: 'graph',    label: '🕸 Investigation Graph' },
-  ];
+  const tabCount = (id) => {
+    if (id === 'metadata' && data.metadata) return data.metadata.length;
+    if (id === 'ocr'      && data.ocr)      return data.ocr.length;
+    if (id === 'entities' && data.entities) return data.entities.length;
+    return null;
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-950 border border-slate-800 rounded-xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-slate-800">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-200">Intelligence Profile</h2>
-            <p className="text-xs text-slate-500 font-mono mt-1">ID: {evidenceId}</p>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.7)',
+      backdropFilter: 'blur(10px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '24px',
+    }}>
+      {/* Gradient border modal */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(239,68,68,0.5), rgba(59,130,246,0.5))',
+        borderRadius: 'var(--radius-lg)', padding: '1px',
+        width: '100%', maxWidth: '900px', height: '85vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '-30px 0 80px rgba(239,68,68,0.08), 30px 0 80px rgba(59,130,246,0.1)',
+      }}>
+        <div style={{
+          background: '#0a0a0f', borderRadius: 'calc(var(--radius-lg) - 1px)',
+          display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '18px 24px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>Intelligence Profile</div>
+              <div className="mono-sm" style={{ marginTop: '2px' }}>ID: {evidenceId}</div>
+            </div>
+            <button onClick={onClose} style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '8px', color: 'var(--text-2)', cursor: 'pointer', padding: '6px',
+              lineHeight: 0, transition: 'all 0.2s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-2)'; }}
+            ><CloseIco /></button>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-2 rounded hover:bg-slate-800"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-slate-800 px-6 bg-slate-900/50">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id 
-                  ? 'border-blue-500 text-blue-400' 
-                  : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              {tab.label}
-              {tab.id === 'metadata' && data.metadata && ` (${data.metadata.length})`}
-              {tab.id === 'ocr' && data.ocr && ` (${data.ocr.length})`}
-              {tab.id === 'entities' && data.entities && ` (${data.entities.length})`}
-            </button>
-          ))}
-        </div>
+          {/* Tabs */}
+          <div style={{
+            display: 'flex', gap: '2px',
+            padding: '10px 20px 0',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.02)',
+          }}>
+            {TABS.map(t => {
+              const active = activeTab === t.id;
+              const cnt = tabCount(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  style={{
+                    padding: '8px 16px', fontSize: '12.5px', fontWeight: 500,
+                    border: 'none', cursor: 'pointer', borderRadius: '6px 6px 0 0',
+                    transition: 'all 0.2s',
+                    background: active ? 'rgba(59,130,246,0.1)' : 'transparent',
+                    color: active ? '#60a5fa' : 'var(--text-3)',
+                    borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
+                    marginBottom: '-1px',
+                  }}
+                >
+                  {t.label}{cnt != null ? ` (${cnt})` : ''}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-950/50">
-          {renderTabContent()}
+          {/* Content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+            {renderContent()}
+          </div>
         </div>
       </div>
     </div>

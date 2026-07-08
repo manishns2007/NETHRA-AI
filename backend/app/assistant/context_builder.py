@@ -116,8 +116,34 @@ class ContextBuilder:
         return "\n".join(parts)
 
     @staticmethod
-    def build_instructions(empty_result: bool = False, rel_category: RelationshipCategory = RelationshipCategory.NONE) -> str:
-        base = """
+    def build_instructions(
+        empty_result: bool = False,
+        rel_category: RelationshipCategory = RelationshipCategory.NONE,
+        pinned_evidence_id: str | None = None,
+        pinned_evidence_title: str | None = None,
+    ) -> str:
+        # --- Pinned Evidence Constraint (highest priority) ---
+        # When the investigator has selected a specific evidence file, the LLM
+        # MUST NOT reference, summarise, or draw conclusions from any other file.
+        pinned_block = ""
+        if pinned_evidence_id:
+            title_display = f'"{pinned_evidence_title}"' if pinned_evidence_title else f"[ID: {pinned_evidence_id}]"
+            pinned_block = f"""
+=== ACTIVE EVIDENCE CONTEXT ===
+The investigator has pinned the following evidence file:
+  Evidence ID : {pinned_evidence_id}
+  File Name   : {pinned_evidence_title or "Unknown"}
+
+CRITICAL CONSTRAINT:
+- You MUST answer ONLY using the content of {title_display}.
+- You MUST NOT summarise, reference, or draw any information from any other evidence file.
+- If the answer cannot be found within {title_display}, explicitly state:
+  "The selected evidence ({title_display}) does not contain enough information to answer this question."
+- Do NOT fall back to other evidence files even if they contain related content.
+
+"""
+
+        base = pinned_block + """
 === Instructions for NETHRA AI ===
 
 You are NETHRA AI, a professional digital forensics and threat intelligence analyst.
@@ -154,3 +180,4 @@ STRICT RULES — follow exactly:
 NOTE: No evidence was retrieved for this query. Do not guess or hallucinate.
 """
         return base
+
