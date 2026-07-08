@@ -19,8 +19,9 @@ export const getEvidence = async () => {
   return api.get('/evidence/');
 };
 
-export const getAuditLogs = async () => {
-  return api.get('/audit-logs');
+export const getAuditLogs = async (evidenceId = null) => {
+  const params = evidenceId ? { evidence_id: evidenceId } : {};
+  return api.get('/audit-logs', { params });
 };
 
 export const getIntelligenceStatus = async (evidenceId) => {
@@ -38,6 +39,18 @@ export const getIntelligenceOCR = async (evidenceId) => {
 export const getIntelligenceEntities = async (evidenceId, entityType = null) => {
   const params = entityType ? { entity_type: entityType } : {};
   return api.get(`/intelligence/${evidenceId}/entities`, { params });
+};
+
+export const getIntelligenceInsights = async (evidenceId) => {
+  return api.get(`/intelligence/${evidenceId}/insights`);
+};
+
+export const getIntelligenceTimeline = async (evidenceId) => {
+  return api.get(`/intelligence/${evidenceId}/timeline`);
+};
+
+export const getIntelligenceReportPreview = async (evidenceId) => {
+  return api.get(`/intelligence/${evidenceId}/report-preview`);
 };
 
 // ── Graph API ─────────────────────────────────────────────────────────────────

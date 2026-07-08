@@ -110,16 +110,6 @@ const DashboardLayout = ({ children }) => {
           })}
         </nav>
 
-        {/* Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', color: 'rgba(255,255,255,0.25)' }}>
-          <div style={{
-            width: '7px', height: '7px', borderRadius: '50%',
-            background: '#22c55e',
-            boxShadow: '0 0 8px rgba(34,197,94,0.7)',
-            animation: 'glowPulse 2.5s ease-in-out infinite',
-          }} />
-          System online
-        </div>
       </header>
 
       {/* ── Content ── */}

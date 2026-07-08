@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { UploadModal } from './UploadModal';
 import { EvidenceLedger } from '../Dashboard/EvidenceLedger';
 import { WorkspaceGraph } from '../Dashboard/GraphPreviewWidget';
-import { InvestigationPanel } from '../Dashboard/InvestigationPanel';
-import { CaseContextPanel, InvestigationStatus, EvidenceHealth, AIInsightsWidget, EventLogWidget } from '../Dashboard/DashboardWidgets';
+import { InvestigationDrawer } from '../Dashboard/InvestigationDrawer';
+import { CaseContextPanel, InvestigationStatus } from '../Dashboard/DashboardWidgets';
 import { useInvestigation } from '../../context/InvestigationContext';
-import { Upload } from 'lucide-react';
+import { Upload, Shield } from 'lucide-react';
+import Assistant from '../Assistant/Assistant';
 
 export default function EvidenceVaultDashboard({ onUploadSuccess }) {
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -17,22 +18,11 @@ export default function EvidenceVaultDashboard({ onUploadSuccess }) {
     if (onUploadSuccess) onUploadSuccess();
   };
 
-  // If no evidence is selected, we could show a global dashboard view, or just show the 3 columns with empty states.
-  // The user requested a persistent workspace, so we keep the 3 columns always visible.
-
-  // Aggregate stats for the top panels
-  const total = evidenceList.length;
-  const processed = evidenceList.filter(e => e.status === 'PROCESSED').length;
-  const processing = evidenceList.filter(e => e.status === 'PROCESSING' || e.status === 'PENDING').length;
-  const failed = evidenceList.filter(e => e.status === 'FAILED').length;
-  const recentEvents = [...evidenceList].sort((a,b) => new Date(b.upload_timestamp||0) - new Date(a.upload_timestamp||0)).slice(0, 5);
-
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* Top Sticky Context Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 40, background: '#0a0a0f', padding: '24px 28px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          {/* Custom injection of the CaseContextPanel to include the ingest button */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '16px 24px', background: 'rgba(255,255,255,0.02)',
@@ -54,10 +44,6 @@ export default function EvidenceVaultDashboard({ onUploadSuccess }) {
                     <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>Active Analysis</span>
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>Investigator</div>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>Agent K. Chen</div>
-                </div>
               </div>
             </div>
             
@@ -71,21 +57,17 @@ export default function EvidenceVaultDashboard({ onUploadSuccess }) {
                 boxShadow: '0 4px 14px rgba(59,130,246,0.3)',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <Upload size={16} />
               Ingest Evidence
             </button>
           </div>
-
-          <InvestigationStatus />
         </div>
 
-        {/* Main 3-Column Workspace */}
-        <div style={{ display: 'flex', flex: 1, minHeight: '600px', padding: '0 28px 28px', gap: '16px', marginTop: '16px' }}>
+        {/* Main Workspace Layout */}
+        <div style={{ display: 'flex', flex: 1, minHeight: '600px', height: 'calc(100vh - 150px)', padding: '0 28px 28px', gap: '16px', marginTop: '16px' }}>
           
-          {/* Left: Evidence Ledger (25% width) */}
+          {/* Left: Evidence Ledger */}
           <div style={{ width: '25%', minWidth: '280px', maxWidth: '350px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <EvidenceLedger 
               evidenceList={evidenceList} 
@@ -94,24 +76,22 @@ export default function EvidenceVaultDashboard({ onUploadSuccess }) {
             />
           </div>
 
-          {/* Center: Primary Visualization (Knowledge Graph) (45% width) */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <WorkspaceGraph evidenceId={selectedEvidenceId} />
-          </div>
-
-          {/* Right: Intelligence / Context Panel (30% width) */}
-          <div style={{ width: '30%', minWidth: '320px', maxWidth: '450px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {/* Center: Workspace Content */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden' }}>
             {selectedEvidenceId ? (
-              <InvestigationPanel 
-                evidenceId={selectedEvidenceId} 
-              />
+              <WorkspaceGraph evidenceId={selectedEvidenceId} />
             ) : (
-              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
-                {/* Global Dashboard widgets when no evidence is selected */}
-                <EvidenceHealth total={total} processed={processed} processing={processing} failed={failed} />
-                <EventLogWidget events={recentEvents} />
+              <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', padding: '40px', textAlign: 'center' }}>
+                <Shield size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
+                <h3 style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>Investigation Workspace</h3>
+                <p style={{ fontSize: '13px', lineHeight: 1.6, maxWidth: '300px' }}>Select an evidence item from the ledger to begin analysis. The workspace will automatically adapt to the selected context.</p>
               </div>
             )}
+          </div>
+
+          {/* Right: Persistent Investigation Drawer */}
+          <div style={{ width: '35%', minWidth: '320px', maxWidth: '450px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <InvestigationDrawer />
           </div>
 
         </div>

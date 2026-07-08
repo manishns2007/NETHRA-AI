@@ -1,5 +1,9 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getEvidence, getIntelligenceStatus, getIntelligenceMetadata, getIntelligenceOCR, getIntelligenceEntities } from '../services/api';
+import { 
+  getEvidence, getIntelligenceStatus, getIntelligenceMetadata, 
+  getIntelligenceOCR, getIntelligenceEntities, getIntelligenceInsights,
+  getIntelligenceTimeline, getIntelligenceReportPreview, getAuditLogs
+} from '../services/api';
 
 const InvestigationContext = createContext();
 
@@ -14,6 +18,10 @@ export const InvestigationProvider = ({ children }) => {
     metadata: null,
     ocr: null,
     entities: null,
+    insights: null,
+    timeline: null,
+    reportPreview: null,
+    chainOfCustody: null,
     loading: false,
   });
 
@@ -34,7 +42,11 @@ export const InvestigationProvider = ({ children }) => {
   // Fetch intelligence data whenever the selected evidence changes
   useEffect(() => {
     if (!selectedEvidenceId) {
-      setIntelligence({ status: null, metadata: null, ocr: null, entities: null, loading: false });
+      setIntelligence({ 
+        status: null, metadata: null, ocr: null, entities: null, 
+        insights: null, timeline: null, reportPreview: null, chainOfCustody: null, 
+        loading: false 
+      });
       return;
     }
 
@@ -47,15 +59,23 @@ export const InvestigationProvider = ({ children }) => {
           catch (e) { return null; }
         };
 
-        const [s, m, o, e] = await Promise.all([
+        const [s, m, o, e, ins, tl, rp, coc] = await Promise.all([
           fetchGracefully(getIntelligenceStatus, selectedEvidenceId),
           fetchGracefully(getIntelligenceMetadata, selectedEvidenceId),
           fetchGracefully(getIntelligenceOCR, selectedEvidenceId),
           fetchGracefully(getIntelligenceEntities, selectedEvidenceId),
+          fetchGracefully(getIntelligenceInsights, selectedEvidenceId),
+          fetchGracefully(getIntelligenceTimeline, selectedEvidenceId),
+          fetchGracefully(getIntelligenceReportPreview, selectedEvidenceId),
+          fetchGracefully(getAuditLogs, selectedEvidenceId),
         ]);
 
         if (!cancelled) {
-          setIntelligence({ status: s, metadata: m, ocr: o, entities: e, loading: false });
+          setIntelligence({ 
+            status: s, metadata: m, ocr: o, entities: e, 
+            insights: ins, timeline: tl, reportPreview: rp, chainOfCustody: coc,
+            loading: false 
+          });
         }
       } catch (err) {
         if (!cancelled) setIntelligence(prev => ({ ...prev, loading: false }));

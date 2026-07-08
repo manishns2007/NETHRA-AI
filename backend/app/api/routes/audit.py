@@ -1,13 +1,21 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.audit import AuditLog
 from app.schemas.audit import AuditLogResponse
-from typing import List
+from typing import List, Optional
 
 router = APIRouter()
 
 @router.get("/", response_model=List[AuditLogResponse])
-def get_audit_logs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).offset(skip).limit(limit).all()
+def get_audit_logs(
+    evidence_id: Optional[str] = Query(None, description="Filter logs by evidence ID"),
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db)
+):
+    query = db.query(AuditLog)
+    if evidence_id:
+        query = query.filter(AuditLog.evidence_id == evidence_id)
+    logs = query.order_by(AuditLog.timestamp.desc()).offset(skip).limit(limit).all()
     return logs

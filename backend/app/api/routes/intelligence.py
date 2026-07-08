@@ -107,3 +107,25 @@ def get_entities(
         query = query.filter(ExtractedEntity.entity_type == entity_type.upper())
     records = query.order_by(ExtractedEntity.entity_type).all()
     return [ExtractedEntityResponse.model_validate(r) for r in records]
+
+
+from app.schemas.intelligence import AIInsightResponse, TimelineResponse, ReportPreviewResponse
+from app.services.intelligence_service import IntelligenceService
+
+@router.get("/{evidence_id}/insights", response_model=List[AIInsightResponse])
+def get_insights(evidence_id: str, db: Session = Depends(get_db)):
+    """Return AI insights derived from the evidence."""
+    _get_evidence_or_404(evidence_id, db)
+    return IntelligenceService.get_insights(db, evidence_id)
+
+@router.get("/{evidence_id}/timeline", response_model=TimelineResponse)
+def get_timeline(evidence_id: str, db: Session = Depends(get_db)):
+    """Return both processing and extracted evidence timeline events."""
+    _get_evidence_or_404(evidence_id, db)
+    return IntelligenceService.get_timeline(db, evidence_id)
+
+@router.get("/{evidence_id}/report-preview", response_model=ReportPreviewResponse)
+def get_report_preview(evidence_id: str, db: Session = Depends(get_db)):
+    """Return structured report preview placeholder."""
+    _get_evidence_or_404(evidence_id, db)
+    return IntelligenceService.get_report_preview(db, evidence_id)

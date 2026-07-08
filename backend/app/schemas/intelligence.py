@@ -64,3 +64,31 @@ class ExtractedEntityResponse(BaseModel):
     extracted_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+class AIInsightResponse(BaseModel):
+    id: str
+    type: str  # e.g., 'lead', 'timeline', 'info'
+    text: str
+    confidence: Optional[float] = None
+    evidence_id: str
+
+class TimelineEventResponse(BaseModel):
+    id: str
+    type: str # 'PROCESSING' or 'EVIDENCE'
+    event_name: str
+    timestamp: datetime
+    details: Optional[str] = None
+
+class TimelineResponse(BaseModel):
+    evidence_id: str
+    events: list[TimelineEventResponse]
+
+class ReportSectionPreview(BaseModel):
+    id: str
+    title: str
+    status: str # 'ready', 'processing', 'missing_data'
+    summary_placeholder: Optional[str] = None
+
+class ReportPreviewResponse(BaseModel):
+    evidence_id: str
+    sections: list[ReportSectionPreview]

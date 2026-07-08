@@ -55,13 +55,18 @@ def ask_assistant(db: Session, request: AssistantRequest) -> AssistantResponse:
     # 3. Hybrid evidence retrieval
     t0 = time.time()
     evidence_retriever = HybridEvidenceRetriever(db)
+    
+    # Restrict retrieval entirely to selected evidence unless case-wide search requested
+    # Note: Case-wide search is prepared for future, but defaults to False
+    evidence_id_to_search = None if request.case_wide_search else request.selected_evidence_id
+
     evidence_data = evidence_retriever.retrieve(
         question=question,
         max_results=6,
         intent=intent.value,
         indicators=indicators,
         clean_keywords=clean_keywords,
-        evidence_id=request.evidence_id,   # ← pin to selected evidence when set
+        evidence_id=evidence_id_to_search,
     )
     evidence_items = evidence_data.get("evidence", [])
     evidence_ids = [ev["evidence_id"] for ev in evidence_items]
@@ -122,8 +127,8 @@ def ask_assistant(db: Session, request: AssistantRequest) -> AssistantResponse:
     instructions_str = ContextBuilder.build_instructions(
         empty_result=empty_result,
         rel_category=rel_category,
-        pinned_evidence_id=request.evidence_id,
-        pinned_evidence_title=evidence_items[0]["title"] if request.evidence_id and evidence_items else None,
+        pinned_evidence_id=request.selected_evidence_id,
+        pinned_evidence_title=evidence_items[0]["title"] if request.selected_evidence_id and evidence_items else None,
     )
     context_duration = time.time() - t0
 

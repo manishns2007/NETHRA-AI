@@ -61,8 +61,11 @@ export default function Assistant() {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+  const scrollToBottom = React.useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+  
+  useEffect(() => { scrollToBottom(); }, [messages, isLoading, scrollToBottom]);
 
   const handleInput = (e) => {
     setInputValue(e.target.value);
@@ -89,7 +92,10 @@ export default function Assistant() {
       const response = await askAssistant({
         question: userMessage.content,
         history: historyPayload,
-        evidence_id: selectedEvidenceId || null,  // ← pin to selected evidence
+        active_case_id: 'INV-2026-092',
+        selected_evidence_id: selectedEvidenceId || null,
+        conversation_id: 'session-1',
+        case_wide_search: !selectedEvidenceId
       });
       setMessages(prev => [...prev, {
         role: 'ai',
@@ -125,47 +131,51 @@ export default function Assistant() {
         
         {/* Left Panel: Investigation Context */}
         <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Panel title="Investigation Context" icon={Target}>
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '4px' }}>Active Operation</div>
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>Operation Phantom</div>
-              <div className="mono-sm" style={{ color: '#60a5fa', marginTop: '2px' }}>ID: INV-2026-092</div>
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>Active Evidence Focus</div>
-              <Dropdown 
-                value={selectedEvidenceId || 'NONE'}
-                onChange={val => setSelectedEvidenceId(val === 'NONE' ? null : val)}
-                options={evidenceOptions}
-                placeholder="Select evidence context..."
-              />
-            </div>
-
-            {selectedEvidenceItem && (
-              <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-1)', marginBottom: '8px', wordBreak: 'break-all' }}>
-                  {selectedEvidenceItem.original_filename}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>
-                  <span>Source:</span> <span style={{ color: 'var(--text-2)' }}>{selectedEvidenceItem.source_type}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-3)' }}>
-                  <span>Entities Extracted:</span> <span style={{ color: 'var(--text-2)' }}>{intelligence?.entities?.length || 0}</span>
-                </div>
+          <div style={{ zIndex: 20, position: 'relative' }}>
+            <Panel title="Investigation Context" icon={Target}>
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '4px' }}>Active Operation</div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>Operation Phantom</div>
+                <div className="mono-sm" style={{ color: '#60a5fa', marginTop: '2px' }}>ID: INV-2026-092</div>
               </div>
-            )}
-          </Panel>
 
-          <Panel title="Suggested Actions" icon={Brain}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {['Summarize selected evidence', 'List extracted entities', 'Detect anomalies', 'Generate Investigation Report'].map((action, i) => (
-                <button key={i} onClick={() => { setInputValue(action); textareaRef.current?.focus(); }} style={{ textAlign: 'left', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', color: 'var(--text-2)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background='rgba(59,130,246,0.1)'} onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                  {action}
-                </button>
-              ))}
-            </div>
-          </Panel>
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>Active Evidence Focus</div>
+                <Dropdown 
+                  value={selectedEvidenceId || 'NONE'}
+                  onChange={val => setSelectedEvidenceId(val === 'NONE' ? null : val)}
+                  options={evidenceOptions}
+                  placeholder="Select evidence context..."
+                />
+              </div>
+
+              {selectedEvidenceItem && (
+                <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-1)', marginBottom: '8px', wordBreak: 'break-all' }}>
+                    {selectedEvidenceItem.original_filename}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>
+                    <span>Source:</span> <span style={{ color: 'var(--text-2)' }}>{selectedEvidenceItem.source_type}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-3)' }}>
+                    <span>Entities Extracted:</span> <span style={{ color: 'var(--text-2)' }}>{intelligence?.entities?.length || 0}</span>
+                  </div>
+                </div>
+              )}
+            </Panel>
+          </div>
+
+          <div style={{ zIndex: 10, position: 'relative' }}>
+            <Panel title="Suggested Actions" icon={Brain}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {['Summarize selected evidence', 'List extracted entities', 'Detect anomalies', 'Generate Investigation Report'].map((action, i) => (
+                  <button key={i} onClick={() => { setInputValue(action); textareaRef.current?.focus(); }} style={{ textAlign: 'left', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', color: 'var(--text-2)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background='rgba(59,130,246,0.1)'} onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                    {action}
+                  </button>
+                ))}
+              </div>
+            </Panel>
+          </div>
         </div>
 
         {/* Center Panel: Assistant Conversation */}
