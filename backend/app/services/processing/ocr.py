@@ -20,9 +20,7 @@ import io
 from typing import Any
 
 from app.core.config import settings
-import pytesseract
 
-pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
 
 _PROCESSING_VERSION = settings.PROCESSING_VERSION
 
@@ -33,6 +31,8 @@ def _tesseract_image(pil_image) -> dict[str, Any]:
 
     Returns extracted text, confidence score, and word-level bounding boxes.
     """
+    import pytesseract
+
     text = pytesseract.image_to_string(pil_image).strip()
 
     # Confidence score – average of non-negative word confidences
