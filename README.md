@@ -82,11 +82,11 @@ Experience the marketing landing page and feature highlights here:
 
 ## 📸 Screenshots
 
-> **Note:** Replace these placeholders with actual screenshots of the application.
+
 
 | Dashboard | Knowledge Graph | AI Assistant |
 |:---:|:---:|:---:|
-| <img src="https://via.placeholder.com/400x250.png?text=Dashboard+View" alt="Dashboard" /> | <img src="https://via.placeholder.com/400x250.png?text=Knowledge+Graph" alt="Graph" /> | <img src="https://via.placeholder.com/400x250.png?text=AI+Assistant" alt="Assistant" /> |
+| <img src="./docs/screenshots/dashboard.png" alt="Dashboard" /> | <img src="./docs/screenshots/knowledge_graph.png" alt="Knowledge Graph" /> | <img src="./docs/screenshots/ai_assistant.png" alt="AI Assistant" /> |
 
 ---
 
