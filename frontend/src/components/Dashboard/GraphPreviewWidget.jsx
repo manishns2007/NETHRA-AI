@@ -4,6 +4,7 @@ import { Network, ZoomIn, Maximize } from 'lucide-react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { GRAPH_STYLESHEET, transformToCytoscape } from '../Graph/graphConfig';
 import { getGraphForEvidence } from '../../services/api';
+import { useInvestigation } from '../../context/InvestigationContext';
 
 export const WorkspaceGraph = ({ evidenceId }) => {
   const [graphData, setGraphData] = useState(null);
@@ -35,11 +36,15 @@ export const WorkspaceGraph = ({ evidenceId }) => {
     return () => { cancelled = true; };
   }, [evidenceId]);
 
+  const { setSelectedGraphNode } = useInvestigation();
   const elements = useMemo(() => transformToCytoscape(graphData), [graphData]);
 
   const handleCyReady = useCallback(cy => {
     cyRef.current = cy;
-  }, []);
+    cy.off('tap');
+    cy.on('tap', 'node', evt => setSelectedGraphNode(evt.target.data()));
+    cy.on('tap', evt => { if (evt.target === cy) setSelectedGraphNode(null); });
+  }, [setSelectedGraphNode]);
 
   if (!evidenceId) {
     return (

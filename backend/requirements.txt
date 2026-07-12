@@ -12,7 +12,7 @@ Pillow
 PyMuPDF
 pdf2image
 python-magic-bin
-spacy
+
 exifread
 networkx
 python-whois

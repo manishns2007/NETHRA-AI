@@ -18,6 +18,7 @@ class ExtractionMethodNER(str, enum.Enum):
     SPACY = "SPACY"
     REGEX = "REGEX"
     STRUCTURED = "STRUCTURED"
+    LLM = "LLM"
 
 class EntityType(str, enum.Enum):
     PERSON = "PERSON"
@@ -35,6 +36,7 @@ class EntityType(str, enum.Enum):
     FILE_HASH = "FILE_HASH"
     SOCIAL_HANDLE = "SOCIAL_HANDLE"
     CRYPTO_WALLET = "CRYPTO_WALLET"
+    EVENT = "EVENT"
 
 class ProcessingStatus(str, enum.Enum):
     PENDING = "PENDING"

@@ -21,7 +21,7 @@ export const getEvidence = async () => {
 
 export const getAuditLogs = async (evidenceId = null) => {
   const params = evidenceId ? { evidence_id: evidenceId } : {};
-  return api.get('/audit-logs', { params });
+  return api.get('/audit-logs/', { params });
 };
 
 export const getIntelligenceStatus = async (evidenceId) => {
@@ -51,6 +51,10 @@ export const getIntelligenceTimeline = async (evidenceId) => {
 
 export const getIntelligenceReportPreview = async (evidenceId) => {
   return api.get(`/intelligence/${evidenceId}/report-preview`);
+};
+
+export const getIntelligenceReport = async (evidenceId) => {
+  return api.get(`/intelligence/${evidenceId}/report`);
 };
 
 // ── Graph API ─────────────────────────────────────────────────────────────────

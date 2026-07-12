@@ -25,6 +25,8 @@ export const InvestigationProvider = ({ children }) => {
     loading: false,
   });
 
+  const [selectedGraphNode, setSelectedGraphNode] = useState(null);
+
   // Fetch the global evidence list
   const fetchEvidence = async () => {
     try {
@@ -47,12 +49,14 @@ export const InvestigationProvider = ({ children }) => {
         insights: null, timeline: null, reportPreview: null, chainOfCustody: null, 
         loading: false 
       });
+      setSelectedGraphNode(null);
       return;
     }
 
     let cancelled = false;
     const loadIntelligence = async () => {
       setIntelligence(prev => ({ ...prev, loading: true }));
+      setSelectedGraphNode(null);
       try {
         const fetchGracefully = async (fn, id) => {
           try { const res = await fn(id); return res.data; }
@@ -95,6 +99,8 @@ export const InvestigationProvider = ({ children }) => {
     setSelectedEvidenceId,
     selectedEvidenceItem,
     intelligence,
+    selectedGraphNode,
+    setSelectedGraphNode,
   };
 
   return (

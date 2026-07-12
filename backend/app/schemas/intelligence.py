@@ -92,3 +92,13 @@ class ReportSectionPreview(BaseModel):
 class ReportPreviewResponse(BaseModel):
     evidence_id: str
     sections: list[ReportSectionPreview]
+
+class FullReportResponse(BaseModel):
+    evidence_id: str
+    metadata: list[MetadataResponse]
+    ocr: list[OCRResultResponse]
+    entities: list[ExtractedEntityResponse]
+    insights: list[AIInsightResponse]
+    timeline: list[TimelineEventResponse]
+    generated_at: datetime
+

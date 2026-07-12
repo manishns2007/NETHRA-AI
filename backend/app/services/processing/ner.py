@@ -1,15 +1,15 @@
 """
 Named Entity Recognition (NER) service for NETHRA AI.
 
-Hybrid pipeline — regex is the authoritative extractor; spaCy is a
+Hybrid pipeline — regex is the authoritative extractor; an LLM is a
 semantic supplement only:
 
   - Regex (primary): deterministic, high-precision extraction of structured
     patterns — EMAIL, PHONE, URL, DOMAIN, IP, FILE_HASH, CRYPTO_WALLET,
-    SOCIAL_HANDLE.  All regex spans are masked before spaCy runs.
+    SOCIAL_HANDLE.  All regex spans are masked before the LLM runs.
 
-  - spaCy (supplement): probabilistic extraction restricted to PERSON, ORG,
-    GPE→LOC, NORP, EVENT, and PRODUCT→DEVICE only.  A multi-layer
+  - LLM (supplement): probabilistic extraction restricted to PERSON, ORG,
+    LOC, EVENT, and DEVICE only.  A multi-layer
     post-processing filter then rejects:
       • Entities shorter than 3 characters.
       • Purely numeric entities.
@@ -99,16 +99,21 @@ def _context(text: str, start: int, end: int, window: int = 80) -> str:
     return f"...{snippet}..." if ctx_start > 0 or ctx_end < len(text) else snippet
 
 
-# ── spaCy Extraction ────────────────────────────────────────────────────────────
+# ── LLM Extraction ────────────────────────────────────────────────────────────
+import json
+import logging
+from app.assistant.llm import LLMProvider
 
-# Map spaCy entity labels to our EntityType enum values
-_SPACY_LABEL_MAP = {
-    "PERSON": "PERSON",
-    "ORG": "ORG",
-    "GPE": "LOC",
-    "NORP": "NORP",
-    "EVENT": "EVENT",
-    "PRODUCT": "DEVICE",  # heuristic: products are often devices in investigations
+logger = logging.getLogger(__name__)
+
+# Map expected JSON keys from LLM to our EntityType enum values
+_LLM_LABEL_MAP = {
+    "persons": "PERSON",
+    "organizations": "ORG",
+    "locations": "LOC",
+    "events": "EVENT",
+    "devices": "DEVICE",
+    "evidence_objects": "DEVICE"
 }
 
 _GENERIC_STOP_PHRASES = {
@@ -135,87 +140,106 @@ _FORENSIC_LABELS = [
     "ip", "port", "checksum"
 ]
 
-_nlp = None  # Lazy-load to avoid slow startup
-
-def _get_nlp():
-    """Lazily load spaCy model."""
-    global _nlp
-    if _nlp is None:
-        try:
-            import spacy
-            _nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            # Model not downloaded yet – caller handles gracefully
-            _nlp = None
-    return _nlp
-
-
-def _extract_spacy(text: str, original_text: str = None) -> list[dict[str, Any]]:
+def _extract_llm(text: str, original_text: str = None) -> list[dict[str, Any]]:
     """
-    Run spaCy NER on text and return structured entity dicts.
-
-    Falls back to an empty list if the spaCy model is unavailable.
+    Run LLM NER on text and return structured entity dicts.
     """
-    nlp = _get_nlp()
-    if nlp is None:
+    try:
+        llm = LLMProvider()
+    except Exception as e:
+        logger.error("Failed to initialize LLM provider for NER: %s", e)
         return []
 
-    doc = nlp(text[:1_000_000])  # Guard against huge inputs
+    prompt = (
+        "Extract the following entities from the text below: persons, organizations, locations, events, devices, evidence_objects.\n"
+        "Return the result ONLY as a valid JSON object with these keys (each mapping to a list of strings).\n"
+        "Do not include any other text, markdown formatting (like ```json), or explanations.\n"
+        "If a category has no entities, return an empty list for that key.\n\n"
+        "TEXT:\n"
+        f"{text[:10000]}"
+    )
+    
+    try:
+        response_text = llm.generate_response(context="", question=prompt, instructions="")
+        # Remove any markdown code blocks
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+            
+        data = json.loads(response_text.strip())
+    except Exception as e:
+        logger.error("LLM NER extraction failed: %s", e)
+        return []
+
     entities = []
     seen = set()
 
-    for ent in doc.ents:
-        label = _SPACY_LABEL_MAP.get(ent.label_)
-        if label is None:
+    for category, items in data.items():
+        label = _LLM_LABEL_MAP.get(category.lower())
+        if not label or not isinstance(items, list):
             continue
 
-        value = ent.text.strip()
-        if not value or (label, value.lower()) in seen:
-            continue
+        for value in items:
+            value = str(value).strip()
+            if not value or (label, value.lower()) in seen:
+                continue
+                
+            # Post-processing validation
+            if len(value) < 3:
+                continue
+                
+            if value.isdigit():
+                continue
+                
+            normalized_for_stop = re.sub(r"[^\w]", "", value).lower()
+            if normalized_for_stop in _NORMALIZED_STOPWORDS:
+                continue
+                
+            # Reject if it fully matches any regex pattern
+            is_regex_match = False
+            for pattern in _PATTERNS.values():
+                if pattern.fullmatch(value):
+                    is_regex_match = True
+                    break
+            if is_regex_match:
+                continue
+                
+            # Find context snippet by simple text search (first occurrence)
+            ctx_text = original_text if original_text is not None else text
+            start_char = ctx_text.lower().find(value.lower())
             
-        # Post-processing validation
-        if len(value) < 3:
-            continue
-            
-        if value.isdigit():
-            continue
-            
-        normalized_for_stop = re.sub(r"[^\w]", "", value).lower()
-        if normalized_for_stop in _NORMALIZED_STOPWORDS:
-            continue
-            
-        # Reject if it fully matches any regex pattern
-        is_regex_match = False
-        for pattern in _PATTERNS.values():
-            if pattern.fullmatch(value):
-                is_regex_match = True
-                break
-        if is_regex_match:
-            continue
-            
-        # Context-aware rejection
-        ctx_text = original_text if original_text is not None else text
-        preceding_text = ctx_text[max(0, ent.start_char - 25):ent.start_char].lower()
-        has_context_rejection = False
-        for kw in _CONTEXT_REJECTION_KEYWORDS:
-            if re.search(r'\b' + re.escape(kw) + r'\b\W*$', preceding_text):
-                has_context_rejection = True
-                break
-        if has_context_rejection:
-            continue
+            if start_char != -1:
+                end_char = start_char + len(value)
+                
+                # Context-aware rejection
+                preceding_text = ctx_text[max(0, start_char - 25):start_char].lower()
+                has_context_rejection = False
+                for kw in _CONTEXT_REJECTION_KEYWORDS:
+                    if re.search(r'\b' + re.escape(kw) + r'\b\W*$', preceding_text):
+                        has_context_rejection = True
+                        break
+                if has_context_rejection:
+                    continue
+                    
+                context_snippet = _context(ctx_text, start_char, end_char)
+            else:
+                context_snippet = f"...{value}..."
 
-        seen.add((label, value.lower()))
+            seen.add((label, value.lower()))
 
-        entities.append(
-            {
-                "entity_type": label,
-                "entity_value": value,
-                "normalized_value": _normalize(label, value),
-                "context_snippet": _context(text, ent.start_char, ent.end_char),
-                "confidence": 0.80,  # spaCy doesn't expose per-entity scores for sm model
-                "extraction_method": "SPACY",
-            }
-        )
+            entities.append(
+                {
+                    "entity_type": label,
+                    "entity_value": value,
+                    "normalized_value": _normalize(label, value),
+                    "context_snippet": context_snippet,
+                    "confidence": 0.85, 
+                    "extraction_method": "LLM",
+                }
+            )
 
     return entities
 
@@ -334,7 +358,7 @@ def _parse_whatsapp(text: str) -> list[tuple[str, str, str]]:
 
 
 def _process_text_segment(text: str) -> list[dict[str, Any]]:
-    """Process a segment of text with regex and masked spaCy extraction."""
+    """Process a segment of text with regex and masked LLM extraction."""
     regex_entities = _extract_regex(text)
     
     # Clean forensic labels
@@ -347,9 +371,9 @@ def _process_text_segment(text: str) -> list[dict[str, Any]]:
             spans_to_mask.append(ent.pop("_span"))
             
     masked_text = _mask_text(cleaned_text, spans_to_mask)
-    spacy_entities = _extract_spacy(masked_text, original_text=text)
+    llm_entities = _extract_llm(masked_text, original_text=text)
     
-    return regex_entities + spacy_entities
+    return regex_entities + llm_entities
 
 
 def extract_entities(text: str) -> list[dict[str, Any]]:
@@ -357,7 +381,7 @@ def extract_entities(text: str) -> list[dict[str, Any]]:
     Extract all named entities from the provided text using the hybrid pipeline.
 
     Regex patterns are run first (deterministic, high precision).
-    Regex spans are masked before spaCy is run to reduce false positives.
+    Regex spans are masked before the LLM is run to reduce false positives.
     WhatsApp chats are parsed into structured logs to avoid extracting from metadata.
     Duplicates produced by both engines are deduplicated by (type, normalized_value).
 

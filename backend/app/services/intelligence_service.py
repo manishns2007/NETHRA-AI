@@ -5,43 +5,55 @@ from app.models.intelligence import ExtractedEntity, EntityType, ProcessingLog
 from app.schemas.intelligence import AIInsightResponse, TimelineEventResponse, TimelineResponse, ReportSectionPreview, ReportPreviewResponse
 
 class IntelligenceService:
-    @staticmethod
     def get_insights(db: Session, evidence_id: str) -> list[AIInsightResponse]:
         entities = db.query(ExtractedEntity).filter(ExtractedEntity.evidence_id == evidence_id).all()
         
         if not entities:
             return []
             
-        persons = [e for e in entities if e.entity_type == EntityType.PERSON]
-        orgs = [e for e in entities if e.entity_type == EntityType.ORG]
-        locations = [e for e in entities if e.entity_type == EntityType.LOC]
-        dates = [e for e in entities if e.entity_type == EntityType.DATE or e.entity_type == EntityType.TIME]
+        # Group by entity type dynamically
+        type_counts = {}
+        for e in entities:
+            type_counts[e.entity_type] = type_counts.get(e.entity_type, 0) + 1
 
         insights = []
-        if persons:
-            insights.append(AIInsightResponse(
-                id=str(uuid.uuid4()), type="lead", evidence_id=evidence_id,
-                text=f"Detected {len(persons)} key individuals mentioned in this evidence.",
-                confidence=0.92
-            ))
-        if orgs:
-            insights.append(AIInsightResponse(
-                id=str(uuid.uuid4()), type="lead", evidence_id=evidence_id,
-                text=f"Extracted {len(orgs)} organizations which may be tied to external networks.",
-                confidence=0.88
-            ))
-        if locations:
-            insights.append(AIInsightResponse(
-                id=str(uuid.uuid4()), type="lead", evidence_id=evidence_id,
-                text=f"Found {len(locations)} geolocation references indicating physical movement.",
-                confidence=0.85
-            ))
-        if dates:
-            insights.append(AIInsightResponse(
-                id=str(uuid.uuid4()), type="timeline", evidence_id=evidence_id,
-                text=f"Extracted {len(dates)} temporal metadata points mapped to evidence timeline.",
-                confidence=0.99
-            ))
+        
+        # Pre-defined insight templates for all supported EntityTypes
+        insight_templates = {
+            EntityType.PERSON: {"type": "lead", "text": "Detected {count} key individuals mentioned in this evidence.", "conf": 0.92},
+            EntityType.ORG: {"type": "lead", "text": "Extracted {count} organizations which may be tied to external networks.", "conf": 0.88},
+            EntityType.LOC: {"type": "lead", "text": "Found {count} geolocation references indicating physical movement.", "conf": 0.85},
+            EntityType.EMAIL: {"type": "lead", "text": "Identified {count} email addresses for communication tracing.", "conf": 0.95},
+            EntityType.PHONE: {"type": "lead", "text": "Extracted {count} phone numbers, potential targets for subscriber lookups.", "conf": 0.95},
+            EntityType.URL: {"type": "info", "text": "Found {count} URLs pointing to external web resources.", "conf": 0.90},
+            EntityType.DOMAIN: {"type": "info", "text": "Detected {count} domains which could be investigated for registration details.", "conf": 0.90},
+            EntityType.IP: {"type": "lead", "text": "Extracted {count} IP addresses. Recommend cross-referencing with threat intel.", "conf": 0.98},
+            EntityType.USERNAME: {"type": "lead", "text": "Found {count} usernames potentially linking to social media profiles.", "conf": 0.80},
+            EntityType.DATE: {"type": "timeline", "text": "Extracted {count} dates mapped to the evidence timeline.", "conf": 0.99},
+            EntityType.TIME: {"type": "timeline", "text": "Extracted {count} temporal metadata points mapped to timeline.", "conf": 0.99},
+            EntityType.DEVICE: {"type": "info", "text": "Detected {count} hardware devices or software products.", "conf": 0.82},
+            EntityType.FILE_HASH: {"type": "lead", "text": "Extracted {count} cryptographic hashes. Ready for malware sandbox verification.", "conf": 0.99},
+            EntityType.SOCIAL_HANDLE: {"type": "lead", "text": "Found {count} social media handles for OSINT pivot.", "conf": 0.90},
+            EntityType.CRYPTO_WALLET: {"type": "lead", "text": "Detected {count} cryptocurrency wallets. Recommended for blockchain tracing.", "conf": 0.99},
+            EntityType.EVENT: {"type": "info", "text": "Identified {count} distinct events or activities within the text.", "conf": 0.85},
+        }
+
+        # Generate insights based on counts
+        for ent_type, count in type_counts.items():
+            if ent_type in insight_templates:
+                t = insight_templates[ent_type]
+                insights.append(AIInsightResponse(
+                    id=str(uuid.uuid4()), type=t["type"], evidence_id=evidence_id,
+                    text=t["text"].format(count=count),
+                    confidence=t["conf"]
+                ))
+            else:
+                # Fallback for any unexpected/new entity types
+                insights.append(AIInsightResponse(
+                    id=str(uuid.uuid4()), type="info", evidence_id=evidence_id,
+                    text=f"Extracted {count} entities of type {ent_type.value if hasattr(ent_type, 'value') else str(ent_type)}.",
+                    confidence=0.70
+                ))
 
         if not insights and entities:
             insights.append(AIInsightResponse(

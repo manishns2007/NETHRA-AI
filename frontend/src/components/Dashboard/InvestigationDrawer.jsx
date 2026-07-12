@@ -7,6 +7,7 @@ import { TimelineView } from '../Intelligence/TimelineView';
 import { ChainOfCustodyView } from '../Intelligence/ChainOfCustodyView';
 import { AIInsightsView } from '../Intelligence/AIInsightsView';
 import { ReportPreview } from '../Intelligence/ReportPreview';
+import { RelationshipsView } from '../Intelligence/RelationshipsView';
 import { useInvestigation } from '../../context/InvestigationContext';
 
 const TABS = [
@@ -23,7 +24,7 @@ const TABS = [
 
 export const InvestigationDrawer = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { selectedEvidenceId, selectedEvidenceItem, intelligence } = useInvestigation();
+  const { selectedEvidenceId, selectedEvidenceItem, intelligence, selectedGraphNode } = useInvestigation();
   const { status, metadata, ocr, entities, insights, timeline, chainOfCustody, reportPreview, loading } = intelligence;
 
   if (!selectedEvidenceId) {
@@ -85,12 +86,7 @@ export const InvestigationDrawer = () => {
           <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-3)' }}>No entities found.</div>
         );
       case 'relationships':
-        return (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-3)' }}>
-            <Network size={24} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-            <p style={{ fontSize: '13px' }}>Select a node in the Knowledge Graph to view its relationships.</p>
-          </div>
-        );
+        return <RelationshipsView selectedNode={selectedGraphNode} />;
       case 'timeline':
         return timeline ? <TimelineView timeline={timeline} /> : (
           <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-3)' }}>No timeline events found.</div>
@@ -104,7 +100,13 @@ export const InvestigationDrawer = () => {
           <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-3)' }}>No AI insights generated.</div>
         );
       case 'report':
-        return reportPreview ? <ReportPreview preview={reportPreview} /> : (
+        return reportPreview ? (
+          <ReportPreview 
+            preview={reportPreview} 
+            evidenceId={selectedEvidenceId}
+            evidenceItem={selectedEvidenceItem}
+          />
+        ) : (
           <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-3)' }}>No report preview available.</div>
         );
       default: return null;

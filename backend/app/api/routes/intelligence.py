@@ -109,8 +109,9 @@ def get_entities(
     return [ExtractedEntityResponse.model_validate(r) for r in records]
 
 
-from app.schemas.intelligence import AIInsightResponse, TimelineResponse, ReportPreviewResponse
+from app.schemas.intelligence import AIInsightResponse, TimelineResponse, ReportPreviewResponse, FullReportResponse
 from app.services.intelligence_service import IntelligenceService
+from datetime import datetime
 
 @router.get("/{evidence_id}/insights", response_model=List[AIInsightResponse])
 def get_insights(evidence_id: str, db: Session = Depends(get_db)):
@@ -129,3 +130,25 @@ def get_report_preview(evidence_id: str, db: Session = Depends(get_db)):
     """Return structured report preview placeholder."""
     _get_evidence_or_404(evidence_id, db)
     return IntelligenceService.get_report_preview(db, evidence_id)
+
+@router.get("/{evidence_id}/report", response_model=FullReportResponse)
+def get_full_report(evidence_id: str, db: Session = Depends(get_db)):
+    """Return the complete intelligence report data for a given evidence item."""
+    _get_evidence_or_404(evidence_id, db)
+    
+    metadata = get_metadata(evidence_id, db)
+    ocr = get_ocr_results(evidence_id, db)
+    entities = get_entities(evidence_id=evidence_id, entity_type=None, db=db)
+    insights = IntelligenceService.get_insights(db, evidence_id)
+    timeline = IntelligenceService.get_timeline(db, evidence_id)
+    
+    return FullReportResponse(
+        evidence_id=evidence_id,
+        metadata=metadata,
+        ocr=ocr,
+        entities=entities,
+        insights=insights,
+        timeline=timeline.events,
+        generated_at=datetime.utcnow()
+    )
+

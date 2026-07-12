@@ -3,6 +3,7 @@ import { Shield, Brain, FileText } from 'lucide-react';
 import MetadataViewer from '../Intelligence/MetadataViewer';
 import OCRPreview from '../Intelligence/OCRPreview';
 import EntityList from '../Intelligence/EntityList';
+import { ReportPreview } from '../Intelligence/ReportPreview';
 import { useInvestigation } from '../../context/InvestigationContext';
 
 const TABS = [
@@ -28,30 +29,6 @@ export const InvestigationPanel = () => {
     );
   }
 
-  // --- Abstracted Insights generation ---
-  const generateInsights = () => {
-    if (!entities || !Array.isArray(entities) || entities.length === 0) {
-      return [{ text: 'No entities extracted to generate insights.', conf: 'N/A', type: 'info' }];
-    }
-    
-    const persons = entities.filter(e => e.entity_type === 'PERSON').length;
-    const orgs = entities.filter(e => e.entity_type === 'ORG').length;
-    const locations = entities.filter(e => e.entity_type === 'LOC' || e.entity_type === 'LOCATION').length;
-    
-    const insights = [];
-    if (persons > 0) insights.push({ text: `Detected ${persons} key individuals mentioned in this evidence.`, conf: '92%', type: 'lead' });
-    if (orgs > 0) insights.push({ text: `Extracted ${orgs} organizations which may be tied to external networks.`, conf: '88%', type: 'lead' });
-    if (locations > 0) insights.push({ text: `Found ${locations} geolocation references indicating physical movement.`, conf: '85%', type: 'lead' });
-    
-    if (Array.isArray(metadata) && metadata.some(m => m.key?.toLowerCase().includes('date') || m.key?.toLowerCase().includes('time'))) {
-      insights.push({ text: `Temporal metadata successfully mapped to timeline.`, conf: '99%', type: 'timeline' });
-    }
-
-    if (insights.length === 0) {
-      insights.push({ text: 'Entities found, but no critical patterns detected.', conf: 'N/A', type: 'info' });
-    }
-    return insights;
-  };
 
   const renderContent = () => {
     if (loading) return (
@@ -107,27 +84,33 @@ export const InvestigationPanel = () => {
           </div>
         );
       case 'insights':
-        const insights = generateInsights();
-        return (
+        return insights && insights.length > 0 ? (
           <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {insights.map((insight, i) => (
-              <div key={i} style={{ padding: '14px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '8px', display: 'flex', gap: '12px' }}>
+              <div key={insight.id || i} style={{ padding: '14px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '8px', display: 'flex', gap: '12px' }}>
                 <Brain size={16} color="#60a5fa" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   <p style={{ fontSize: '13px', color: '#e2e8f0', margin: '0 0 8px 0', lineHeight: 1.5 }}>{insight.text}</p>
-                  <span style={{ fontSize: '11px', color: '#34d399', background: 'rgba(52,211,153,0.1)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Confidence: {insight.conf}</span>
+                  <span style={{ fontSize: '11px', color: '#34d399', background: 'rgba(52,211,153,0.1)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Confidence: {Math.round(insight.confidence * 100)}%</span>
                 </div>
               </div>
             ))}
           </div>
+        ) : (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-3)' }}>
+            <p style={{ fontSize: '13px' }}>No insights generated.</p>
+          </div>
         );
       case 'future_report':
-        return (
-          <div style={{ padding: '40px', textAlign: 'center' }}>
-            <FileText size={32} color="var(--text-3)" style={{ opacity: 0.5, margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>Report Generation</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '200px', margin: '0 auto' }}>Module 8 functionality will be integrated here, allowing you to generate comprehensive intelligence reports directly from this workspace.</p>
-            <div style={{ marginTop: '20px', padding: '6px 12px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '11px', fontWeight: 600, borderRadius: '4px', display: 'inline-block' }}>COMING SOON</div>
+        return intelligence.reportPreview ? (
+          <ReportPreview 
+            preview={intelligence.reportPreview} 
+            evidenceId={selectedEvidenceId} 
+            evidenceItem={selectedEvidenceItem} 
+          />
+        ) : (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>
+            <p style={{ fontSize: '13px' }}>Loading report preview...</p>
           </div>
         );
       default: return null;
