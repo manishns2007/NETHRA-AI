@@ -1,6 +1,3 @@
-<div align="center">
-  <!-- Placeholders for logo -->
-  <img src="https://via.placeholder.com/150x150.png?text=NETHRA-AI+Logo" alt="NETHRA AI Logo" width="120" />
 
   # NETHRA-AI
   **Intelligence at the Speed of Investigation**
