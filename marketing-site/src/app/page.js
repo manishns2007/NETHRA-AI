@@ -8,7 +8,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="w-full max-w-5xl mx-auto px-6 pt-32 pb-24 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-medium mb-8 animate-fade-in">
-          <Shield size={14} /> Platform Beta Now Closed
+          <Shield size={14} /> Platform Now Live
         </div>
         
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
@@ -20,9 +20,9 @@ export default function Home() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          <button disabled className="bg-white/5 border border-white/10 text-white/50 px-6 py-3 rounded-lg font-medium flex items-center gap-2 cursor-not-allowed">
+          <Link href="http://localhost:5173" className="bg-white/5 border border-white/10 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 hover:bg-white/10 transition-colors">
             Launch Platform
-          </button>
+          </Link>
           <Link href="/docs" className="bg-accent hover:bg-accent/90 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)]">
             Read Documentation <ChevronRight size={16} />
           </Link>

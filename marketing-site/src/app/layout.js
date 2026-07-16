@@ -36,9 +36,9 @@ export default function RootLayout({ children }) {
             <Link href="/gallery" className="text-sm font-medium text-muted hover:text-white transition-colors">Gallery</Link>
             <Link href="/docs" className="text-sm font-medium text-muted hover:text-white transition-colors">Docs</Link>
             
-            <button disabled className="bg-white/5 border border-white/10 text-white/50 px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 cursor-not-allowed">
-              <Shield size={14} /> Launch Platform <span className="bg-accent/20 text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">BETA</span>
-            </button>
+            <Link href="http://localhost:5173" className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors">
+              <Shield size={14} /> Launch Platform
+            </Link>
           </div>
         </nav>
 
