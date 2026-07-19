@@ -262,10 +262,3 @@ Contributions make the open-source community an amazing place to learn, inspire,
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
-
-## 🙏 Acknowledgements
-
-- [Kerala Police Cyberdome](https://cyberdome.kerala.gov.in/) for inspiring the initiative.
-- [Cytoscape.js](https://js.cytoscape.org/) for robust graph rendering.
-- [FastAPI](https://fastapi.tiangolo.com/) for the lightning-fast backend framework.
-- [React](https://reactjs.org/) & [Vite](https://vitejs.dev/) for a seamless frontend experience.
