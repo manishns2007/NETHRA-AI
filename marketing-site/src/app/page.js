@@ -20,7 +20,7 @@ export default function Home() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          <Link href={process.env.NEXT_PUBLIC_APP_URL || "https://nethra-ai-tau.vercel.app"} className="bg-white/5 border border-white/10 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 hover:bg-white/10 transition-colors">
+          <Link href={process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'development' ? "http://localhost:5173" : "https://nethra-ai-tau.vercel.app")} className="bg-white/5 border border-white/10 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 hover:bg-white/10 transition-colors">
             Launch Platform
           </Link>
           <Link href="/docs" className="bg-accent hover:bg-accent/90 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)]">

@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
             <Link href="/gallery" className="text-sm font-medium text-muted hover:text-white transition-colors">Gallery</Link>
             <Link href="/docs" className="text-sm font-medium text-muted hover:text-white transition-colors">Docs</Link>
             
-            <Link href={process.env.NEXT_PUBLIC_APP_URL || "https://nethra-ai-tau.vercel.app"} className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors">
+            <Link href={process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'development' ? "http://localhost:5173" : "https://nethra-ai-tau.vercel.app")} className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors">
               <Shield size={14} /> Launch Platform
             </Link>
           </div>
