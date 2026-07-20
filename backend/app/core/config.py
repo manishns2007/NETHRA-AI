@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
     # OCR Settings
-    TESSERACT_CMD: str = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    TESSERACT_CMD: str = "tesseract"
     # Processing pipeline version – increment when extraction engines are upgraded
     PROCESSING_VERSION: str = "v1.0"
 

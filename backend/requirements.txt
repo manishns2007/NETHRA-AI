@@ -11,7 +11,7 @@ pytesseract
 Pillow
 PyMuPDF
 pdf2image
-python-magic-bin
+python-magic
 
 exifread
 networkx

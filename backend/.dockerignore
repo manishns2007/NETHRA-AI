@@ -1,0 +1,15 @@
+.git
+.gitignore
+.vscode
+.idea
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.env
+.env.*
+*.db
+uploads/
+venv/
+.venv/
+node_modules/
