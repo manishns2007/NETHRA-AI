@@ -8,7 +8,9 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install system dependencies required for OCR, PDF processing, and python-magic
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Use HTTPS for apt to prevent 403 Forbidden errors on some network proxies
+RUN sed -i 's/http:/https:/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     poppler-utils \
     libmagic1 \
