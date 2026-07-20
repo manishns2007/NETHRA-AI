@@ -1,8 +1,21 @@
+# -- Web Service (FastAPI + Uvicorn) ------------------------------------------
+# This file is the DEFAULT Railway configuration used by BOTH services when
+# they are first created from the same repo.
+#
+# WORKER SERVICE OVERRIDE (required in Railway dashboard):
+#   Service: nethra-worker
+#   Settings -> Deploy -> Start Command:
+#     sh -c "./start-worker.sh"
+#   Settings -> Deploy -> Health Check Path: (leave empty -- workers have no HTTP)
+#
+# The dashboard start command takes precedence over startCommand here.
+# -----------------------------------------------------------------------------
+
 [build]
-builder = "nixpacks"
+builder = "docker"
 
 [deploy]
-startCommand = "/bin/sh -c 'uvicorn app.main:app --host 0.0.0.0 --port $PORT'"
-healthcheckPath = "/"
+startCommand = "sh -c \"./start.sh\""
+healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
