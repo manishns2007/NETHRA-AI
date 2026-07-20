@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 # Prevent Python from writing pyc files to disc and enable unbuffered logging
 ENV PYTHONDONTWRITEBYTECODE=1
