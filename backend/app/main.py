@@ -30,3 +30,8 @@ app.include_router(assistant.router, prefix=f"{settings.API_V1_STR}/assistant", 
 @app.get("/")
 def root():
     return {"message": "Welcome to NETHRA AI API"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
