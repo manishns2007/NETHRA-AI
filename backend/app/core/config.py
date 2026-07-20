@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "NETHRA AI"
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "sqlite:///./nethra_ai.db"  # Using SQLite for MVP as planned
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@postgres:5432/nethra_ai"
     UPLOAD_DIR: str = "uploads"
 
     # Celery / Redis
