@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
 
     # Celery / Redis
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    CELERY_BROKER_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
     # OCR Settings
     TESSERACT_CMD: str = "tesseract"
