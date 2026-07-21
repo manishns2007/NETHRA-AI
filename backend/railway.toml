@@ -1,21 +1,25 @@
-# -- Web Service (FastAPI + Uvicorn) ------------------------------------------
-# This file is the DEFAULT Railway configuration used by BOTH services when
-# they are first created from the same repo.
+# Railway shared build configuration
 #
-# WORKER SERVICE OVERRIDE (required in Railway dashboard):
-#   Service: nethra-worker
-#   Settings -> Deploy -> Start Command:
-#     sh -c "./start-worker.sh"
-#   Settings -> Deploy -> Health Check Path: (leave empty -- workers have no HTTP)
+# IMPORTANT: startCommand and healthcheckPath are intentionally absent.
 #
-# The dashboard start command takes precedence over startCommand here.
-# -----------------------------------------------------------------------------
+# Railway's startCommand in railway.toml is absolute — it overrides the
+# per-service "Start Command" set in the dashboard. Because both the web
+# service and the worker service share this file, putting any startCommand
+# here forces BOTH services to run the same process.
+#
+# Instead, each service declares its own start command in the Railway dashboard:
+#
+#   nethra-web    Start Command : sh -c "./start.sh"
+#                 Health Check  : /health
+#
+#   nethra-worker Start Command : sh -c "./start-worker.sh"
+#                 Health Check  : (empty — Celery has no HTTP server)
+#
+# Railway respects the dashboard values when this file is silent about them.
 
 [build]
 builder = "docker"
 
 [deploy]
-startCommand = "sh -c \"./start.sh\""
-healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10

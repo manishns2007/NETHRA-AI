@@ -40,13 +40,12 @@ RUN useradd -m -d /app appuser && \
 # Switch to the non-root user
 USER appuser
 
-# Expose the port that the application listens on
+# Expose the port that the application listens on.
+# Only relevant for the web service; the worker binds no port.
 EXPOSE 8000
 
-# Add a healthcheck to ensure the service is running
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl --fail http://localhost:${PORT:-8000}/health || exit 1
-
-# Default command for the Web Service
-# This can be overridden by the orchestrator for the Celery worker
+# Default command — used only for local development (docker-compose).
+# On Railway, each service overrides this via its dashboard Start Command:
+#   web    -> sh -c "./start.sh"
+#   worker -> sh -c "./start-worker.sh"
 CMD ["sh", "-c", "./start.sh"]
