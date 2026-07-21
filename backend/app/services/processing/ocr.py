@@ -33,6 +33,9 @@ def _tesseract_image(pil_image) -> dict[str, Any]:
     """
     import pytesseract
 
+    if getattr(settings, "TESSERACT_CMD", None):
+        pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
+
     text = pytesseract.image_to_string(pil_image).strip()
 
     # Confidence score – average of non-negative word confidences

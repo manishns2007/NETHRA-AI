@@ -21,7 +21,7 @@ const timeAgo = ts => {
 
 const StatusIcon = ({ status }) => {
   if (status === 'PROCESSED') return <CheckCircle2 size={14} color="#22c55e" />;
-  if (status === 'PROCESSING' || status === 'PENDING') return <Clock size={14} color="#3b82f6" />;
+  if (['PROCESSING', 'PENDING', 'UPLOADED', 'QUEUED'].includes(status)) return <Clock size={14} color="#3b82f6" />;
   return <AlertCircle size={14} color="#ef4444" />;
 };
 
