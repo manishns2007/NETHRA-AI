@@ -1,0 +1,44 @@
+﻿# Railway Worker Service Configuration
+#
+# This file documents the configuration for the dedicated Celery worker service
+# on Railway. It is NOT used automatically by Railway's builder -- you must create
+# a second service in the Railway dashboard manually (see README below).
+#
+# -- How to deploy the Celery worker on Railway --------------------------------
+#
+# 1. In the Railway dashboard, open your project.
+# 2. Click "+ New Service" -> "Deploy from GitHub repo" -> same repo as the web service.
+# 3. Set the service name to "nethra-worker" (or similar).
+# 4. In the service Settings -> Build:
+#    - Builder: Dockerfile
+#    - Dockerfile path: backend/Dockerfile
+# 5. In Settings -> Deploy -> Start Command, set:
+#    celery -A app.core.celery_app worker --loglevel=info --queues=processing,celery
+# 6. In Settings -> Variables, add ALL of the same variables as the web service:
+#    - REDIS_URL          (copy from the web service or link the Redis addon)
+#    - DATABASE_URL       (link same Postgres addon as web service)
+#    - GEMINI_API_KEY
+#    - VIRUSTOTAL_API_KEY
+#    - ABUSEIPDB_API_KEY
+#    - TESSERACT_CMD=tesseract   (pre-installed in the Docker image)
+# 7. Deploy. Verify in the worker logs that you see:
+#    [tasks]
+#      . app.services.processing.pipeline.process_evidence
+#      . app.enrichment.tasks.*
+#    Connected to redis://...
+#
+# -- Why a separate service? ---------------------------------------------------
+# Railway provisions one container per service. Running the Celery worker as a
+# background process (&) inside the web container means:
+#   - If the worker crashes, Railway cannot detect or restart it independently.
+#   - The worker shares the web container's CPU/memory quota.
+#   - There is no way to scale the worker independently of the web server.
+# A dedicated worker service gets its own lifecycle, restarts, and resource limits.
+
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "celery -A app.core.celery_app worker --loglevel=info --queues=processing,celery"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
