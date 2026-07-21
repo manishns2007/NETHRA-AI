@@ -28,7 +28,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Fix Windows CRLF line endings and ensure start.sh is executable
-RUN apt-get update && apt-get install -y dos2unix && dos2unix start.sh && chmod +x start.sh
+RUN apt-get update && apt-get install -y dos2unix \
+    && dos2unix start.sh start-worker.sh \
+    && chmod +x start.sh start-worker.sh
 
 # Create a non-root user and set permissions
 RUN useradd -m -d /app appuser && \
