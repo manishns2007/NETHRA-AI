@@ -21,11 +21,11 @@ RUN sed -i 's/http:/https:/g' /etc/apt/sources.list.d/debian.sources && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY . .
+COPY backend/ .
 
 # Fix Windows CRLF line endings and ensure start.sh is executable
 RUN apt-get update && apt-get install -y dos2unix \
