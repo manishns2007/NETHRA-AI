@@ -26,6 +26,7 @@ def upgrade() -> None:
         'audit_logs',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('action', sa.String(length=100), nullable=False),
+        sa.Column('evidence_id', sa.String(length=36), nullable=True),
         sa.Column('entity_type', sa.String(length=50), nullable=False),
         sa.Column('entity_id', sa.String(length=36), nullable=False),
         sa.Column('details', sa.String(length=1000), nullable=True),
