@@ -33,12 +33,14 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _resolve_celery_urls(self) -> "Settings":
         """
-        Populate CELERY_BROKER_URL and CELERY_RESULT_BACKEND from REDIS_URL
-        when they are not set explicitly.  Priority order:
-          1. CELERY_BROKER_URL / CELERY_RESULT_BACKEND env vars (explicit override)
-          2. REDIS_URL env var (Railway managed Redis addon)
-          3. localhost fallback (local development without Redis)
+        1. Normalize DATABASE_URL postgresql:// -> postgresql+psycopg:// for SQLAlchemy 2 + psycopg v3.
+        2. Populate CELERY_BROKER_URL and CELERY_RESULT_BACKEND from REDIS_URL when not set explicitly.
         """
+        if self.DATABASE_URL.startswith("postgresql://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+        if self.DATABASE_URL.startswith("postgres://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+
         fallback = self.REDIS_URL or "redis://localhost:6379/0"
         if not self.CELERY_BROKER_URL:
             self.CELERY_BROKER_URL = fallback
