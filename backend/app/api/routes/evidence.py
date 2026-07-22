@@ -66,13 +66,19 @@ async def upload_evidence(
 
     evidence_id = new_evidence.evidence_id
 
-    # Enqueue processing task – fire and forget
-    # If Redis is unavailable the upload still succeeds; status remains UPLOADED
+    # Read uploaded file bytes to pass directly in Celery task payload
+    # so processing works instantly without requiring a shared disk volume
     try:
+        with open(file_location, "rb") as f:
+            file_bytes = f.read()
+
         from app.core.celery_app import celery_app
-        celery_app.send_task("app.services.processing.pipeline.process_evidence", args=[evidence_id])
+        celery_app.send_task(
+            "app.services.processing.pipeline.process_evidence",
+            args=[evidence_id],
+            kwargs={"file_bytes_hex": file_bytes.hex()}
+        )
     except Exception as task_error:
-        # Log failure to dispatch but do not block the upload response
         import logging
         logging.getLogger(__name__).warning(
             "Could not enqueue processing task for %s: %s", evidence_id, task_error

@@ -138,18 +138,9 @@ def _run_ocr(file_path: str, category: FileCategory) -> list[dict[str, Any]]:
     max_retries=0,  # No auto-retry – failures must be investigated by the operator
     acks_late=True,
 )
-def process_evidence(self, evidence_id: str) -> dict[str, Any]:
+def process_evidence(self, evidence_id: str, file_bytes_hex: str | None = None) -> dict[str, Any]:
     """
     Celery task: orchestrate full evidence processing for a single evidence_id.
-
-    This task is enqueued by the evidence upload endpoint (Module 1) immediately
-    after a successful upload and SHA-256 hash verification of the upload itself.
-
-    Args:
-        evidence_id: The UUID evidence_id from the evidence table.
-
-    Returns:
-        Summary dict with status and counts of extracted intelligence.
     """
     db: Session = SessionLocal()
     evidence: Evidence | None = None
@@ -163,6 +154,14 @@ def process_evidence(self, evidence_id: str) -> dict[str, Any]:
         if not evidence:
             logger.error("process_evidence: evidence_id=%s not found", evidence_id)
             return {"status": "ERROR", "reason": "evidence_not_found"}
+
+        # Reconstruct file locally on worker if missing from disk
+        import os
+        if not os.path.exists(evidence.file_path):
+            os.makedirs(os.path.dirname(evidence.file_path), exist_ok=True)
+            if file_bytes_hex:
+                with open(evidence.file_path, "wb") as f:
+                    f.write(bytes.fromhex(file_bytes_hex))
 
         # ── Step 1: Mark as QUEUED ────────────────────────────────────────────
         _set_status(db, evidence, EvidenceStatus.QUEUED)
