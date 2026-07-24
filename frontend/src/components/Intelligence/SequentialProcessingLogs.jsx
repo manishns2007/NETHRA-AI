@@ -35,10 +35,10 @@ export const SequentialProcessingLogs = ({ logs }) => {
           fontSize: '10px',
           padding: '2px 8px',
           borderRadius: '10px',
-          background: 'rgba(34,197,94,0.12)',
+          background: 'rgba(34,197,94,0.15)',
           color: '#4ade80',
-          border: '1px solid rgba(34,197,94,0.25)',
-          fontWeight: 600
+          border: '1px solid rgba(34,197,94,0.3)',
+          fontWeight: 700
         }}>
           ● Completed
         </span>
@@ -50,77 +50,89 @@ export const SequentialProcessingLogs = ({ logs }) => {
           const stepNum = index + 1;
           const isSuccess = log.status === 'SUCCESS' || !log.status;
           const isFailed = log.status === 'FAILED';
-          
-          const statusColor = isFailed ? '#ef4444' : isSuccess ? '#22c55e' : '#3b82f6';
-          const statusBg = isFailed ? 'rgba(239,68,68,0.15)' : isSuccess ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.15)';
-          const nodeBorder = isFailed ? 'rgba(239,68,68,0.4)' : isSuccess ? 'rgba(34,197,94,0.4)' : 'rgba(59,130,246,0.4)';
 
           return (
-            <div key={log.id || index} style={{ display: 'flex', gap: '12px', position: 'relative', paddingBottom: isLast ? '0px' : '16px' }}>
+            <div key={log.id || index} style={{ display: 'flex', gap: '14px', position: 'relative', paddingBottom: isLast ? '0px' : '18px' }}>
               {/* Vertical connecting line */}
               {!isLast && (
                 <div style={{
                   position: 'absolute',
-                  left: '12px',
-                  top: '24px',
+                  left: '13px',
+                  top: '26px',
                   bottom: '0px',
                   width: '2px',
-                  background: 'linear-gradient(to bottom, rgba(59,130,246,0.4), rgba(255,255,255,0.06))',
+                  background: 'linear-gradient(to bottom, #3b82f6 0%, rgba(255,255,255,0.12) 100%)',
                   zIndex: 0
                 }} />
               )}
 
-              {/* Step node badge */}
+              {/* High-contrast centered step node badge */}
               <div style={{
-                width: '26px',
-                height: '26px',
+                width: '28px',
+                height: '28px',
                 borderRadius: '50%',
-                background: statusBg,
-                border: `1.5px solid ${nodeBorder}`,
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center',
+                background: isFailed 
+                  ? 'linear-gradient(135deg, #ef4444, #dc2626)' 
+                  : isSuccess 
+                    ? 'linear-gradient(135deg, #10b981, #059669)' 
+                    : 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                display: 'grid',
+                placeItems: 'center',
                 flexShrink: 0,
                 zIndex: 1,
-                fontSize: '11px',
-                fontWeight: 700,
-                color: statusColor,
-                boxShadow: `0 0 10px ${statusBg}`
+                boxShadow: isFailed 
+                  ? '0 0 12px rgba(239,68,68,0.5)' 
+                  : isSuccess 
+                    ? '0 0 12px rgba(16,185,129,0.4)' 
+                    : '0 0 12px rgba(59,130,246,0.4)'
               }}>
                 {isFailed ? (
-                  <AlertCircle size={13} color="#ef4444" />
+                  <AlertCircle size={14} color="#ffffff" />
                 ) : isSuccess ? (
-                  <span>{stepNum}</span>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    lineHeight: 1,
+                    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                    textAlign: 'center',
+                    userSelect: 'none',
+                    margin: 0,
+                    padding: 0
+                  }}>
+                    {stepNum}
+                  </span>
                 ) : (
-                  <Clock size={13} color="#3b82f6" />
+                  <Clock size={14} color="#ffffff" />
                 )}
               </div>
 
               {/* Step details card */}
               <div style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'rgba(255,255,255,0.025)',
+                border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: '8px',
-                padding: '10px 12px',
-                marginTop: '-2px'
+                padding: '10px 14px',
+                marginTop: '-1px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexWrap: 'wrap' }}>
                     <span style={{
                       fontSize: '9.5px',
-                      fontWeight: 700,
-                      letterSpacing: '0.05em',
-                      padding: '2px 5px',
+                      fontWeight: 800,
+                      letterSpacing: '0.06em',
+                      padding: '2px 6px',
                       borderRadius: '4px',
-                      background: 'rgba(59,130,246,0.12)',
+                      background: 'rgba(59,130,246,0.15)',
                       color: '#60a5fa',
-                      border: '1px solid rgba(59,130,246,0.2)',
+                      border: '1px solid rgba(59,130,246,0.3)',
                       fontFamily: 'monospace'
                     }}>
                       STEP {String(stepNum).padStart(2, '0')}
                     </span>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#f1f5f9' }}>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#f8fafc' }}>
                       [{log.step}]
                     </span>
                   </div>
