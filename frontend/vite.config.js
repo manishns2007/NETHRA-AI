@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://nethra-ai-production.up.railway.app',
+        target: 'https://nethra-web-production.up.railway.app',
         changeOrigin: true,
         secure: true,
       }

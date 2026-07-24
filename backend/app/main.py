@@ -12,8 +12,14 @@ app = FastAPI(title=settings.PROJECT_NAME)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://nethra-ai-tau.vercel.app", "http://localhost:5173", "http://localhost:3000"],
-    allow_origin_regex="https://.*",
+    allow_origins=[
+        "https://nethra-ai-tau.vercel.app",
+        "https://frontend-two-ruby-40.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:5174",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

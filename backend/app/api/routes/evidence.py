@@ -18,73 +18,88 @@ async def upload_evidence(
     source_type: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
-    # Prevent collisions
-    unique_prefix = str(uuid.uuid4())
-    stored_filename = f"{unique_prefix}_{file.filename}"
-    file_location = os.path.join(settings.UPLOAD_DIR, stored_filename)
-    
-    sha256_hash = hashlib.sha256()
-    file_size = 0
-    
-    with open(file_location, "wb") as buffer:
-        while chunk := await file.read(8192):
-            buffer.write(chunk)
-            sha256_hash.update(chunk)
-            file_size += len(chunk)
-            
-    file_hash = sha256_hash.hexdigest()
-    
-    # Duplicate check
-    if db.query(Evidence).filter(Evidence.sha256_hash == file_hash).first():
-        os.remove(file_location)
-        raise HTTPException(status_code=409, detail="Evidence already exists")
-
-    # Create Evidence Record with UPLOADED status
-    new_evidence = Evidence(
-        original_filename=file.filename,
-        stored_filename=stored_filename,
-        file_path=file_location,
-        file_size_bytes=file_size,
-        mime_type=file.content_type,
-        source_type=source_type,
-        sha256_hash=file_hash,
-        status=EvidenceStatus.UPLOADED,
-        is_deleted=False
-    )
-    db.add(new_evidence)
-    db.flush()  # Get the generated evidence_id
-
-    # Create Audit Log
-    audit_entry = AuditLog(
-        action="EVIDENCE_UPLOADED",
-        entity_type="EVIDENCE",
-        entity_id=new_evidence.evidence_id,
-        details=f"Uploaded file {file.filename} with hash {file_hash}"
-    )
-    db.add(audit_entry)
-    db.commit()
-
-    evidence_id = new_evidence.evidence_id
-
-    # Read uploaded file bytes to pass directly in Celery task payload
-    # so processing works instantly without requiring a shared disk volume
     try:
-        with open(file_location, "rb") as f:
-            file_bytes = f.read()
+        # Ensure upload target directory exists
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
-        from app.core.celery_app import celery_app
-        celery_app.send_task(
-            "app.services.processing.pipeline.process_evidence",
-            args=[evidence_id],
-            kwargs={"file_bytes_hex": file_bytes.hex()}
+        # Prevent collisions
+        unique_prefix = str(uuid.uuid4())
+        stored_filename = f"{unique_prefix}_{file.filename}"
+        file_location = os.path.join(settings.UPLOAD_DIR, stored_filename)
+        
+        sha256_hash = hashlib.sha256()
+        file_size = 0
+        
+        with open(file_location, "wb") as buffer:
+            while chunk := await file.read(8192):
+                buffer.write(chunk)
+                sha256_hash.update(chunk)
+                file_size += len(chunk)
+                
+        file_hash = sha256_hash.hexdigest()
+        
+        # Duplicate check
+        if db.query(Evidence).filter(Evidence.sha256_hash == file_hash).first():
+            try:
+                os.remove(file_location)
+            except OSError:
+                pass
+            raise HTTPException(status_code=409, detail="Evidence already exists")
+
+        # Create Evidence Record with UPLOADED status
+        new_evidence = Evidence(
+            original_filename=file.filename,
+            stored_filename=stored_filename,
+            file_path=file_location,
+            file_size_bytes=file_size,
+            mime_type=file.content_type,
+            source_type=source_type,
+            sha256_hash=file_hash,
+            status=EvidenceStatus.UPLOADED,
+            is_deleted=False
         )
-    except Exception as task_error:
+        db.add(new_evidence)
+        db.flush()  # Get the generated evidence_id
+
+        # Create Audit Log
+        audit_entry = AuditLog(
+            action="EVIDENCE_UPLOADED",
+            entity_type="EVIDENCE",
+            entity_id=new_evidence.evidence_id,
+            details=f"Uploaded file {file.filename} with hash {file_hash}"
+        )
+        db.add(audit_entry)
+        db.commit()
+
+        evidence_id = new_evidence.evidence_id
+
+        # Read uploaded file bytes to pass directly in Celery task payload
+        # so processing works instantly without requiring a shared disk volume
+        try:
+            with open(file_location, "rb") as f:
+                file_bytes = f.read()
+
+            from app.core.celery_app import celery_app
+            celery_app.send_task(
+                "app.services.processing.pipeline.process_evidence",
+                args=[evidence_id],
+                kwargs={"file_bytes_hex": file_bytes.hex()}
+            )
+        except Exception as task_error:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Could not enqueue processing task for %s: %s", evidence_id, task_error
+            )
+        
+        return {"evidence_id": evidence_id, "status": "UPLOADED"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(
-            "Could not enqueue processing task for %s: %s", evidence_id, task_error
-        )
-    
-    return {"evidence_id": evidence_id, "status": "UPLOADED"}
+        import traceback
+        logging.getLogger(__name__).error(f"Error in upload_evidence: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/", response_model=List[EvidenceResponse])

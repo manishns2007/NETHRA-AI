@@ -22,7 +22,10 @@ export const UploadModal = ({ onClose, onSuccess }) => {
       onSuccess(response.data);
     } catch (error) {
       console.error("Upload failed", error);
-      alert(error.response?.data?.detail || "Upload failed");
+      const detail = error.response?.data?.detail;
+      const statusText = error.response?.statusText;
+      const msg = detail || statusText || error.message || "Upload failed";
+      alert(`Upload failed: ${msg}`);
       setIsUploading(false); // only reset on fail, on success unmount happens
     }
   };

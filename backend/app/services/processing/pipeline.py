@@ -158,10 +158,17 @@ def process_evidence(self, evidence_id: str, file_bytes_hex: str | None = None) 
         # Reconstruct file locally on worker if missing from disk
         import os
         if not os.path.exists(evidence.file_path):
-            os.makedirs(os.path.dirname(evidence.file_path), exist_ok=True)
+            dir_name = os.path.dirname(evidence.file_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
             if file_bytes_hex:
                 with open(evidence.file_path, "wb") as f:
                     f.write(bytes.fromhex(file_bytes_hex))
+            else:
+                _set_status(db, evidence, EvidenceStatus.FAILED)
+                _write_log(db, evidence_id, "PIPELINE", "FAILED", f"File missing from worker disk and no file bytes payload provided: {evidence.file_path}")
+                logger.error("File missing and no file bytes payload for evidence %s", evidence_id)
+                return {"status": "FAILED", "reason": "file_not_found"}
 
         # ── Step 1: Mark as QUEUED ────────────────────────────────────────────
         _set_status(db, evidence, EvidenceStatus.QUEUED)
