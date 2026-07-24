@@ -516,44 +516,6 @@ export default function InvestigationGraph({ evidenceId, layout = 'cose', onNode
               </div>
             </div>
           )}
-
-          {/* Built-in Mini Map Navigator (Bottom-Left) */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '16px',
-              left: '16px',
-              width: '120px',
-              height: '80px',
-              background: 'rgba(10,14,24,0.85)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '6px',
-              overflow: 'hidden',
-              pointerEvents: 'none',
-              zIndex: 10,
-            }}
-          >
-            <div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--text-3)', letterSpacing: '0.05em', marginBottom: '4px' }}>
-              Mini Map
-            </div>
-            <div style={{ position: 'relative', width: '100%', height: 'calc(100% - 14px)', background: 'rgba(255,255,255,0.02)', borderRadius: '4px' }}>
-              {/* Mini Map Viewport Indicator Rectangle */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${viewportBox.left}%`,
-                  top: `${viewportBox.top}%`,
-                  width: `${viewportBox.width}%`,
-                  height: `${viewportBox.height}%`,
-                  border: '1.5px solid #60a5fa',
-                  background: 'rgba(96,165,250,0.15)',
-                  borderRadius: '2px',
-                }}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Right-Side Node Details Panel */}
