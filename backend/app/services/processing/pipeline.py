@@ -91,6 +91,7 @@ def _write_audit(db: Session, evidence_id: str, action: str, details: str) -> No
         action=action,
         entity_type="evidence",
         entity_id=evidence_id,
+        evidence_id=evidence_id,
         details=details,
         performed_by="processing_pipeline",
         timestamp=_now(),

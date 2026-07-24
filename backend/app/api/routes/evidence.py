@@ -75,6 +75,7 @@ async def upload_evidence(
             action="EVIDENCE_UPLOADED",
             entity_type="EVIDENCE",
             entity_id=new_evidence.evidence_id,
+            evidence_id=new_evidence.evidence_id,
             details=f"Uploaded file {file.filename} with hash {file_hash}"
         )
         db.add(audit_entry)

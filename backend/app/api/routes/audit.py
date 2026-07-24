@@ -16,6 +16,8 @@ def get_audit_logs(
 ):
     query = db.query(AuditLog)
     if evidence_id:
-        query = query.filter(AuditLog.evidence_id == evidence_id)
+        query = query.filter(
+            (AuditLog.evidence_id == evidence_id) | (AuditLog.entity_id == evidence_id)
+        )
     logs = query.order_by(AuditLog.timestamp.desc()).offset(skip).limit(limit).all()
     return logs

@@ -104,9 +104,11 @@ export default function Assistant() {
         sources: response.data.sources,
       }]);
     } catch (error) {
+      console.error("Assistant API error:", error);
+      const detail = error.response?.data?.detail || error.message || "Failed to connect to NETHRA Intelligence backend.";
       setMessages(prev => [...prev, {
         role: 'ai',
-        content: 'Error: Failed to connect to NETHRA Intelligence backend.',
+        content: `Error: ${detail}`,
       }]);
     } finally {
       setIsLoading(false);
