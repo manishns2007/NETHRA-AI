@@ -124,7 +124,11 @@ export const InvestigationDrawer = () => {
       </div>
       
       {/* Tabs */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
+      <div className="asst-textarea" style={{
+        display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', gap: '4px',
+        padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(0,0,0,0.25)', flexShrink: 0
+      }}>
         {TABS.map(t => {
           const active = activeTab === t.id;
           return (
@@ -132,12 +136,15 @@ export const InvestigationDrawer = () => {
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               style={{
-                flex: '1 0 33%', padding: '10px 8px', fontSize: '11px', fontWeight: 600,
-                border: 'none', background: active ? 'rgba(59,130,246,0.1)' : 'transparent',
-                color: active ? '#60a5fa' : 'var(--text-3)', cursor: 'pointer',
-                borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
-                transition: 'all 0.2s', whiteSpace: 'nowrap'
+                padding: '6px 12px', fontSize: '11.5px', fontWeight: 600,
+                flexShrink: 0, borderRadius: '6px',
+                border: active ? '1px solid rgba(59,130,246,0.3)' : '1px solid transparent',
+                background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+                color: active ? '#60a5fa' : 'rgba(255,255,255,0.45)', cursor: 'pointer',
+                transition: 'all 0.18s', whiteSpace: 'nowrap'
               }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
             >
               {t.label}
             </button>
