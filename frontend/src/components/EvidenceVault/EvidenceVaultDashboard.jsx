@@ -20,7 +20,7 @@ export default function EvidenceVaultDashboard({ onUploadSuccess }) {
 
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, paddingBottom: '40px' }}>
         {/* Top Sticky Context Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 40, background: '#0a0a0f', padding: '24px 28px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{

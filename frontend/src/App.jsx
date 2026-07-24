@@ -113,7 +113,7 @@ const DashboardLayout = ({ children }) => {
       </header>
 
       {/* ── Content ── */}
-      <main style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <main style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {children}
       </main>
     </div>
