@@ -1,4 +1,5 @@
 import os
+import tempfile
 from typing import Optional
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "NETHRA AI"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@postgres:5432/nethra_ai"
-    UPLOAD_DIR: str = "uploads"
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", os.path.join(tempfile.gettempdir(), "nethra_uploads"))
 
     # Railway provides a single REDIS_URL variable for its managed Redis addon.
     # Declare it here so pydantic accepts it without raising an extra-field error.

@@ -34,8 +34,8 @@ RUN apt-get update && apt-get install -y dos2unix \
 
 # Create a non-root user and set permissions
 RUN useradd -m -d /app appuser && \
-    mkdir -p /app/uploads && \
-    chown -R appuser:appuser /app
+    mkdir -p /app/uploads /tmp/nethra_uploads && \
+    chown -R appuser:appuser /app /tmp/nethra_uploads
 
 # Switch to the non-root user
 USER appuser

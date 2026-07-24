@@ -1,5 +1,6 @@
 import hashlib
 import os
+import tempfile
 import uuid
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
@@ -19,13 +20,21 @@ async def upload_evidence(
     db: Session = Depends(get_db)
 ):
     try:
-        # Ensure upload target directory exists
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        upload_dir = settings.UPLOAD_DIR
+        try:
+            os.makedirs(upload_dir, exist_ok=True)
+            test_file = os.path.join(upload_dir, f".perm_test_{uuid.uuid4().hex[:6]}")
+            with open(test_file, "w") as f:
+                f.write("1")
+            os.remove(test_file)
+        except (OSError, PermissionError):
+            upload_dir = os.path.join(tempfile.gettempdir(), "nethra_uploads")
+            os.makedirs(upload_dir, exist_ok=True)
 
         # Prevent collisions
         unique_prefix = str(uuid.uuid4())
         stored_filename = f"{unique_prefix}_{file.filename}"
-        file_location = os.path.join(settings.UPLOAD_DIR, stored_filename)
+        file_location = os.path.join(upload_dir, stored_filename)
         
         sha256_hash = hashlib.sha256()
         file_size = 0

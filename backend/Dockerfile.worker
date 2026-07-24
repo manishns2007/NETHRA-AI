@@ -26,8 +26,8 @@ RUN apt-get update && apt-get install -y dos2unix \
     && chmod +x start-worker.sh
 
 RUN useradd -m -d /app appuser && \
-    mkdir -p /app/uploads && \
-    chown -R appuser:appuser /app
+    mkdir -p /app/uploads /tmp/nethra_uploads && \
+    chown -R appuser:appuser /app /tmp/nethra_uploads
 
 USER appuser
 
