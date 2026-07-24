@@ -250,10 +250,10 @@ class HybridEvidenceRetriever(BaseRetriever):
                          f"filename:{hit_count}")
 
         # ------------------------------------------------------------------
-        # Step 6 — Fallback: most-recent evidence (Investigation Summary intent
-        #          or when no keywords/indicators produced any result)
+        # Step 6 — Fallback: most-recent evidence (when no keywords/indicators
+        #          produced any search hits)
         # ------------------------------------------------------------------
-        if not scores and (intent == "INVESTIGATION_SUM" or not clean_keywords):
+        if not scores:
             recent = (
                 self.db.query(Evidence)
                 .order_by(Evidence.uploaded_at.desc())

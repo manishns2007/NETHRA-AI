@@ -25,6 +25,39 @@ const TypingDots = () => (
   </div>
 );
 
+const renderFormattedText = (text) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return lines.map((line, idx) => {
+    let style = { marginBottom: '4px', lineHeight: '1.5' };
+    let content = line;
+
+    if (line.startsWith('### ')) {
+      return <div key={idx} style={{ fontSize: '15px', fontWeight: 600, color: '#60a5fa', margin: '10px 0 4px 0' }}>{line.replace('### ', '')}</div>;
+    }
+    if (line.startsWith('#### ')) {
+      return <div key={idx} style={{ fontSize: '13px', fontWeight: 600, color: '#93c5fd', margin: '8px 0 3px 0' }}>{line.replace('#### ', '')}</div>;
+    }
+    if (line.startsWith('*') && line.endsWith('*')) {
+      return <div key={idx} style={{ fontSize: '11px', color: 'var(--text-3)', fontStyle: 'italic', marginTop: '6px' }}>{line.replaceAll('*', '')}</div>;
+    }
+    if (line.trim().startsWith('- ')) {
+      content = '• ' + line.trim().substring(2);
+      style = { ...style, paddingLeft: '8px', color: 'var(--text-2)' };
+    }
+
+    const parts = content.split(/(\*\*.*?\*\*)/g);
+    const formattedParts = parts.map((part, pIdx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={pIdx} style={{ color: '#fff', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+
+    return <div key={idx} style={style}>{formattedParts}</div>;
+  });
+};
+
 const AIContent = ({ content, isLatest, onType }) => {
   const [displayed, setDisplayed] = useState(isLatest ? '' : content);
   
@@ -47,7 +80,7 @@ const AIContent = ({ content, isLatest, onType }) => {
 
   return (
     <div style={{ fontFamily: 'inherit' }}>
-      {displayed}
+      {renderFormattedText(displayed)}
       {isTyping && <span style={{ display: 'inline-block', width: '6px', height: '14px', background: '#60a5fa', marginLeft: '4px', verticalAlign: 'middle', animation: 'cursorBlink 1s step-end infinite' }} />}
     </div>
   );
