@@ -3,12 +3,12 @@ import { Shield, Clock, HardDrive, Brain, FileText, CheckCircle2, AlertCircle, L
 import { motion } from 'framer-motion';
 
 // --- Reusable Panel Wrapper ---
-export const Panel = ({ title, icon: Icon, right, children, className = '' }) => (
+export const Panel = ({ title, icon: Icon, right, children, className = '', bodyStyle = {} }) => (
   <div className={`glass-panel ${className}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)',
-      background: 'rgba(255,255,255,0.01)'
+      background: 'rgba(255,255,255,0.01)', flexShrink: 0
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {Icon && <Icon size={16} color="var(--text-3)" />}
@@ -18,7 +18,7 @@ export const Panel = ({ title, icon: Icon, right, children, className = '' }) =>
       </div>
       {right && <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{right}</div>}
     </div>
-    <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, ...bodyStyle }}>
       {children}
     </div>
   </div>
