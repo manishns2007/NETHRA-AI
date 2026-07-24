@@ -108,11 +108,19 @@ def build_graph_for_evidence(
                 .first()
             ) is not None
 
-        if not _entity_exists("EVIDENCE", evidence_id):
+        from app.models.evidence import Evidence
+        ev_rec = db.query(Evidence).filter(Evidence.evidence_id == evidence_id).first()
+        file_label = ev_rec.original_filename if ev_rec else evidence_id
+
+        if not _entity_exists("EVIDENCE", file_label):
             nodes_created += 1
         else:
             nodes_reused += 1
-        evidence_node = get_or_create_entity(db, entity_type="EVIDENCE", value=evidence_id, confidence=1.0)
+        evidence_node = get_or_create_entity(db, entity_type="EVIDENCE", value=file_label, confidence=1.0)
+        props = dict(evidence_node.properties or {})
+        props["filename"] = file_label
+        props["original_filename"] = file_label
+        evidence_node.properties = props
 
         # ── Step 2: Upsert all extracted entity nodes ─────────────────────────
         entity_nodes: list[Entity] = [evidence_node]

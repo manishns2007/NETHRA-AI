@@ -93,6 +93,18 @@ def get_evidence_subgraph(db: Session, evidence_id: str) -> dict[str, Any]:
         if entity_ids else []
     )
 
+    # Enrich EVIDENCE root node with human-readable filename
+    from app.models.evidence import Evidence
+    ev_record = db.query(Evidence).filter(Evidence.evidence_id == evidence_id).first()
+    if ev_record:
+        for n in nodes:
+            if n.id == evidence_id or n.entity_type == "EVIDENCE":
+                props = dict(n.properties or {})
+                props["filename"] = ev_record.original_filename
+                props["original_filename"] = ev_record.original_filename
+                n.properties = props
+                n.value = ev_record.original_filename
+
     return {"nodes": nodes, "edges": edges}
 
 
