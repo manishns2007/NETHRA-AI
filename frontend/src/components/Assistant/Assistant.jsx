@@ -91,11 +91,13 @@ export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
 
   const scrollToBottom = React.useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, []);
   
   useEffect(() => { scrollToBottom(); }, [messages, isLoading, scrollToBottom]);
@@ -160,12 +162,25 @@ export default function Assistant() {
         @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
         .asst-textarea::-webkit-scrollbar { width: 4px; }
         .asst-textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .asst-messages::-webkit-scrollbar { width: 6px; }
+        .asst-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        .asst-messages::-webkit-scrollbar-track { background: transparent; }
+        
+        @media (max-width: 900px) {
+          .asst-layout-container {
+            flex-direction: column !important;
+            overflow-y: auto !important;
+          }
+          .asst-sidebar {
+            width: 100% !important;
+          }
+        }
       `}</style>
       
-      <div style={{ display: 'flex', flex: 1, padding: '24px 28px', gap: '20px', minHeight: '700px' }}>
+      <div className="asst-layout-container" style={{ display: 'flex', flex: 1, height: '100%', minHeight: 0, padding: '24px 28px', gap: '20px', overflow: 'hidden' }}>
         
         {/* Left Panel: Investigation Context */}
-        <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="asst-sidebar" style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px', flexShrink: 0, overflowY: 'auto' }}>
           <div style={{ zIndex: 20, position: 'relative' }}>
             <Panel title="Investigation Context" icon={Target}>
               <div style={{ marginBottom: '20px' }}>
@@ -214,10 +229,10 @@ export default function Assistant() {
         </div>
 
         {/* Center Panel: Assistant Conversation */}
-        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative', overflow: 'hidden' }}>
           
           {/* Header */}
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ flexShrink: 0, padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Brain size={18} color="#60a5fa" />
               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-1)', letterSpacing: '0.05em' }}>NETHRA Intelligence Assistant</span>
@@ -229,8 +244,8 @@ export default function Assistant() {
             )}
           </div>
 
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Messages Container */}
+          <div ref={messagesContainerRef} className="asst-messages" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {messages.length === 0 && !isLoading && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
                 <Search size={32} color="var(--text-3)" style={{ marginBottom: '16px' }} />
@@ -275,11 +290,10 @@ export default function Assistant() {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {/* Fixed Input Area Footer */}
+          <div style={{ flexShrink: 0, padding: '20px', background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(255,255,255,0.05)', zIndex: 10 }}>
             <div style={{ position: 'relative', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', transition: 'border-color 0.2s' }}>
               <textarea
                 ref={textareaRef}

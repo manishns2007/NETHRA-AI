@@ -27,10 +27,10 @@ const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Navbar ── */}
       <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
+        flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '12px 28px',
         background: 'rgba(10,10,15,0.85)',
@@ -113,8 +113,7 @@ const DashboardLayout = ({ children }) => {
       </header>
 
       {/* ── Content ── */}
-      {/* Removed strict minHeight/overflow locks to allow natural page scrolling */}
-      <main style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <main style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {children}
       </main>
     </div>
