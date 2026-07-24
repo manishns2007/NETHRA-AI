@@ -8,6 +8,7 @@ import { ChainOfCustodyView } from '../Intelligence/ChainOfCustodyView';
 import { AIInsightsView } from '../Intelligence/AIInsightsView';
 import { ReportPreview } from '../Intelligence/ReportPreview';
 import { RelationshipsView } from '../Intelligence/RelationshipsView';
+import { SequentialProcessingLogs } from '../Intelligence/SequentialProcessingLogs';
 import { useInvestigation } from '../../context/InvestigationContext';
 
 const TABS = [
@@ -56,20 +57,7 @@ export const InvestigationDrawer = () => {
             </div>
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '12px' }}>Processing Logs</div>
-              {status?.logs?.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {status.logs.map(log => (
-                    <div key={log.id} style={{ display: 'flex', gap: '10px' }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: log.status === 'SUCCESS' ? '#22c55e' : log.status === 'FAILED' ? '#ef4444' : '#3b82f6', marginTop: '6px', flexShrink: 0 }} />
-                      <div>
-                        <div style={{ fontSize: '12.5px', color: '#e2e8f0' }}><span style={{ fontWeight: 600, color: 'var(--text-2)', marginRight: '6px' }}>[{log.step}]</span>{log.message}</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>{new Date(log.timestamp).toLocaleString()}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : <div style={{ fontSize: '13px', color: 'var(--text-3)' }}>No logs available.</div>}
+              <SequentialProcessingLogs logs={status?.logs} />
             </div>
           </div>
         );

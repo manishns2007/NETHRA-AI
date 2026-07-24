@@ -4,6 +4,7 @@ import MetadataViewer from './MetadataViewer';
 import OCRPreview from './OCRPreview';
 import EntityList from './EntityList';
 import InvestigationGraph from '../Graph/InvestigationGraph';
+import { SequentialProcessingLogs } from './SequentialProcessingLogs';
 
 const CloseIco = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -80,29 +81,7 @@ export default function IntelligencePanel({ evidenceId, onClose }) {
       </div>
 
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          Processing Logs
-        </div>
-        {data.status?.logs?.length > 0 ? (
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', listStyle: 'none', margin: 0, padding: 0 }}>
-            {data.status.logs.map(log => {
-              const c = log.status === 'SUCCESS' ? '#22c55e' : log.status === 'FAILED' ? '#ef4444' : '#3b82f6';
-              return (
-                <li key={log.id}>
-                  <span style={{ fontSize: '10.5px', color: 'var(--text-3)', display: 'block' }}>
-                    {new Date(log.timestamp).toLocaleString()}
-                  </span>
-                  <span style={{ fontSize: '13px', color: '#e2e8f0' }}>
-                    <span style={{ fontWeight: 600, color: c, marginRight: '6px' }}>[{log.step}]</span>
-                    {log.message}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p style={{ fontSize: '13px', color: 'var(--text-3)', margin: 0 }}>No logs available.</p>
-        )}
+        <SequentialProcessingLogs logs={data.status?.logs} />
       </div>
     </div>
   );
