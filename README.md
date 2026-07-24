@@ -4,7 +4,7 @@
 
   An advanced, AI-assisted digital forensics and investigation platform built to accelerate evidence discovery using AI, Graph Analysis, and automated data pipelines.
 
-  [Live Demo](https://nethra-ai-tau.vercel.app/) • [Documentation](#) • [Report Bug](#) • [Request Feature](#)
+  [Live Demo](https://nethraai.vercel.app/) • [Documentation](#) • [Report Bug](#) • [Request Feature](#)
 
   <!-- Badges -->
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -51,7 +51,7 @@ The platform provides a secure, evidence-centric workspace, enabling law enforce
 ## 🌐 Live Demo
 
 Experience the marketing landing page and feature highlights here:  
-**[NETHRA AI Live Deployment](https://nethra-ai-tau.vercel.app/)**
+**[NETHRA AI Live Deployment](https://nethraai.vercel.app/)**
 
 ---
 
