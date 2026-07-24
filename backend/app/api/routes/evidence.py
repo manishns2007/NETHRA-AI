@@ -13,12 +13,34 @@ from typing import List, Optional
 
 router = APIRouter()
 
+ALLOWED_EXTENSIONS_BY_SOURCE = {
+    "pdf_document": [".pdf"],
+    "image_evidence": [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".gif"],
+    "whatsapp_export": [".txt", ".zip"],
+    "telegram_export": [".json", ".txt", ".html", ".zip", ".csv"],
+}
+
+def validate_file_format(filename: str, source_type: Optional[str]):
+    if not source_type or source_type not in ALLOWED_EXTENSIONS_BY_SOURCE:
+        return
+    
+    allowed_exts = ALLOWED_EXTENSIONS_BY_SOURCE[source_type]
+    _, ext = os.path.splitext(filename.lower())
+    
+    if ext not in allowed_exts:
+        readable_exts = ", ".join(allowed_exts)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file extension '{ext}' for category '{source_type}'. Allowed extensions: {readable_exts}"
+        )
+
 @router.post("/upload")
 async def upload_evidence(
     file: UploadFile = File(...), 
     source_type: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
+    validate_file_format(file.filename, source_type)
     try:
         upload_dir = settings.UPLOAD_DIR
         try:
