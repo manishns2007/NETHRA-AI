@@ -1,8 +1,11 @@
 /**
- * NodeDetailPanel.jsx — themed with blue/red ambient design
+ * NodeDetailPanel.jsx
+ *
+ * Professional Slide-Over Investigation Panel.
+ * Displays Entity Type, Value, Confidence Score, Threat Intel, and Audit Provenance.
  */
 import React, { useState } from 'react';
-import { ENTITY_LABELS, getNodeColor } from './graphConfig';
+import { ENTITY_LABELS, getNodeMeta } from './graphConfig';
 import { refreshEntityEnrichment } from '../../services/api';
 
 const PROVIDER_META = {
@@ -23,11 +26,37 @@ function DetailRow({ label, value, mono = false }) {
   if (value === null || value === undefined || value === '') return null;
   return (
     <div style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-      <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.28)', marginBottom: '2px' }}>{label}</span>
-      <span style={{ fontSize: '12.5px', color: '#e2e8f0', wordBreak: 'break-all', fontFamily: mono ? "'JetBrains Mono','Fira Code',monospace" : 'inherit' }}>
+      <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.3)', marginBottom: '2px' }}>{label}</span>
+      <span style={{ fontSize: '12.5px', color: '#e2e8f0', wordBreak: 'break-all', fontFamily: mono ? "'JetBrains Mono', 'Fira Code', monospace" : 'inherit' }}>
         {String(value)}
       </span>
     </div>
+  );
+}
+
+function SeverityBadge({ confidence }) {
+  let label = 'Low 🔵';
+  let color = '#60a5fa';
+  let bg = 'rgba(96,165,250,0.1)';
+  
+  if (confidence >= 0.9) {
+    label = 'Critical 🔴';
+    color = '#ef4444';
+    bg = 'rgba(239,68,68,0.12)';
+  } else if (confidence >= 0.75) {
+    label = 'High 🟠';
+    color = '#f97316';
+    bg = 'rgba(249,115,22,0.12)';
+  } else if (confidence >= 0.5) {
+    label = 'Medium 🟡';
+    color = '#eab308';
+    bg = 'rgba(234,179,8,0.12)';
+  }
+
+  return (
+    <span style={{ fontSize: '11px', fontWeight: 600, color, background: bg, border: `1px solid ${color}40`, padding: '2px 8px', borderRadius: '4px' }}>
+      {label}
+    </span>
   );
 }
 
@@ -121,7 +150,7 @@ function ThreatIntelSection({ node }) {
 
       {queued && (
         <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-          <p style={{ fontSize: '12px', color: '#60a5fa' }}>Enrichment task queued. Refresh the node after the Celery worker processes it.</p>
+          <p style={{ fontSize: '12px', color: '#60a5fa' }}>Enrichment task queued. Refresh the node after processing completes.</p>
         </div>
       )}
 
@@ -152,41 +181,48 @@ function ThreatIntelSection({ node }) {
 export default function NodeDetailPanel({ node, onClose }) {
   if (!node) return null;
 
-  const color     = getNodeColor(node.entity_type);
+  const meta = getNodeMeta(node.entity_type);
   const typeLabel = ENTITY_LABELS[node.entity_type] ?? node.entity_type;
   const isEnrichable = node.entity_type !== 'EVIDENCE';
+  const confidencePct = node.confidencePct ?? (node.confidence != null ? Math.round(node.confidence * 100) : 95);
 
   return (
     <div style={{
-      width: '300px', flexShrink: 0,
-      background: 'rgba(10,10,15,0.95)',
+      width: '320px', flexShrink: 0,
+      background: 'rgba(10,10,15,0.96)',
+      backdropFilter: 'blur(16px)',
       borderLeft: '1px solid rgba(255,255,255,0.07)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      boxShadow: '-8px 0 24px rgba(0,0,0,0.5)',
+      zIndex: 30,
     }}>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px',
+        padding: '14px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
-        borderLeft: `3px solid ${color}`,
+        borderLeft: `4px solid ${meta.color}`,
       }}>
-        <div style={{ minWidth: 0 }}>
-          <span style={{
-            fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
-            background: `${color}22`, border: `1px solid ${color}40`,
-            color, borderRadius: '6px', padding: '2px 7px', display: 'inline-block',
-          }}>{typeLabel}</span>
-          <p style={{ fontSize: '13px', fontWeight: 500, color: '#e2e8f0', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={node.fullLabel}>
+        <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '16px' }}>{meta.icon}</span>
+            <span style={{
+              fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+              background: `${meta.color}22`, border: `1px solid ${meta.color}40`,
+              color: meta.color, borderRadius: '6px', padding: '2px 7px',
+            }}>{typeLabel}</span>
+          </div>
+          <p style={{ fontSize: '13.5px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={node.fullLabel}>
             {node.fullLabel}
           </p>
         </div>
+
         <button
           onClick={onClose}
           style={{
-            marginLeft: '8px', flexShrink: 0,
             background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '6px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
-            padding: '4px', lineHeight: 0, transition: 'all 0.18s',
+            padding: '5px', lineHeight: 0, transition: 'all 0.18s',
           }}
           onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
           onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
@@ -198,14 +234,27 @@ export default function NodeDetailPanel({ node, onClose }) {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
-        <DetailRow label="Entity Type"  value={typeLabel} />
-        <DetailRow label="Value"        value={node.fullLabel} mono />
-        <DetailRow label="Normalized"   value={node.normalized_value} mono />
-        <DetailRow label="Confidence"   value={node.confidence != null ? `${(node.confidence * 100).toFixed(0)}%` : null} />
-        <DetailRow label="First Seen"   value={formatDate(node.first_seen)} />
-        <DetailRow label="Last Seen"    value={formatDate(node.last_seen)} />
-        <DetailRow label="Node ID"      value={node.id} mono />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
+        {/* Confidence & Severity Header Card */}
+        <div style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>Confidence Metric</span>
+            <SeverityBadge confidence={node.confidence ?? 0.95} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: `${confidencePct}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #10b981)', borderRadius: '3px' }} />
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981' }}>{confidencePct}%</span>
+          </div>
+        </div>
+
+        <DetailRow label="Entity Classification" value={typeLabel} />
+        <DetailRow label="Full Value" value={node.fullLabel} mono />
+        <DetailRow label="Normalized Value" value={node.normalized_value} mono />
+        <DetailRow label="First Seen" value={formatDate(node.first_seen)} />
+        <DetailRow label="Last Seen" value={formatDate(node.last_seen)} />
+        <DetailRow label="Entity UUID" value={node.id} mono />
 
         {isEnrichable && <ThreatIntelSection node={node} />}
       </div>
